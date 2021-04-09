@@ -1,8 +1,20 @@
 
 
-library("argparser",quietly =T)
+####
+#Prerequisites
+####
 
-version="0.4"
+library(argparser,quietly =T)
+library(DESeq2,quietly =T)
+library(ggplot2,quietly =T)
+library(EnhancedVolcano,quietly =T)
+library(Cairo,quietly =T)
+
+####
+#Version
+####
+
+version="0.5"
 
 #0.2b, change auto filter to *5. Add indfilter and cookscutoff option
 #0.23, add write_table_proper
@@ -91,7 +103,7 @@ filter_data <- function(mat,type="sum",cutoff=10,na.rm=0) {
 ######
 
 deseq2_test <- function(mat,anno,design,fc_cutoff=1,q_cutoff=0.05,pmethod="Wald",qmethod="BH",core=core,treat,ref,independentfiltering=T,cookscutoff=T){
-  library(DESeq2,quietly =T)
+
   #anno and design may need to be checked
 
 
@@ -136,8 +148,6 @@ deseq2_test <- function(mat,anno,design,fc_cutoff=1,q_cutoff=0.05,pmethod="Wald"
 }
 
 volcano_plot_ggplot<-function(fc,q,sig,xlim=c(-7,7),ylim=c(0,30),xlab="Log2FC",ylab="-log10 P",main="Volcano Plot",fc_cutoff=args$fccutoff,q_cutoff=args$q_cutof) {
-  
-  library(ggplot2)
   
   q[is.na(q)]<-1 #remove NA
   
@@ -204,8 +214,6 @@ enhanced_volcano_plot <- function(gene, fc, q, sig, labels = NULL,
                                   xlab = "Log2FC", ylab = "-log10 P", main = "Volcano Plot", 
                                   fc_cutoff = args$fccutoff, q_cutoff = args$q_cutof){
     
-  library(EnhancedVolcano)
-  library(ggplot2)
   
   # Create a data frame using gene names, fold changes, and q-values
   fc <- as.numeric(unlist(fc))
@@ -292,8 +300,6 @@ ma_plot_ggplot<-function(m,a,sig,xlim=c(1,30),ylim=c(-7,7),xlab="A:Log2 Mean of 
   
   #m is lfc
   #a is mean
-  
-  library(ggplot2)
   
   #a[is.na(a)]<-1 #remove NA
   
@@ -414,7 +420,6 @@ save.image(file=rdatafile)
 
 if(args$plot) {
 
-	library(Cairo)
 	
 	#volcano plot
 	vp_outfile_pdf=sub("\\.\\w+$","_volcanoplot.pdf",args$out,perl=T)

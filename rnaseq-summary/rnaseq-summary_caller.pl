@@ -15,7 +15,7 @@ use List::Util qw(sum);
 ########
 
 
-my $version="0.65";
+my $version="0.7";
 
 #v0.1b, changed DE match pattern
 #v0.1c, add first line recognition in DE results
@@ -30,12 +30,14 @@ my $version="0.65";
 #v0.63, Add note to summary file
 #v0.64, Rename duplicated folder names. Known issue, for DEs using different merging folders, GSEA doesn't work well
 #v0.65, add -m for --rnaseq-merge
+#v0.7, AWS and v88
+
 
 my $usage="
 
 rnaseq-summary
 version: $version
-Usage: sbptools rnaseq-summary [parameters]
+Usage: omictools rnaseq-summary [parameters]
 
 Description: Summarize rnaseq-de results and recalculate significance if needed
 1. signficant calls from DE results
@@ -64,12 +66,12 @@ Parameters:
     --qcutoff         Corrected P cutoff, optional
 	
     --tx|-t           Transcriptome
-                        Current support Human.B38.Ensembl84, Mouse.B38.Ensembl84
+                        Current support Human.B38.Ensembl88, Mouse.B38.Ensembl88
 
-    --run_rnaseq-motif  Whether to run sbptools rnaseq-motif, only generate script by default [none]
+    --run_rnaseq-motif  Whether to run omictools rnaseq-motif, only generate script by default [none]
                         use \"cluster\" to run in Firefly
 
-    --run_gsea-gen      Whether to run sbptools gsea-gen, run by default [cluster]
+    --run_gsea-gen      Whether to run omictools gsea-gen, run by default [cluster]
                         use \"none\" to turn off
 
     --gseadbs           Default dbs to run are [h.all.v7.1,c5.bp.v7.1]
@@ -143,31 +145,32 @@ GetOptions(
 #Prerequisites
 ########
 
-my $sbptoolsfolder="/apps/sbptools/";
+my $omictoolsfolder="/apps/omictools/";
 
 #adding --dev switch for better development process
 if($dev) {
-	$sbptoolsfolder="/home/jyin/Projects/Pipeline/sbptools/";
-}
-else {
+#	$omictoolsfolder="/home/jyin/Projects/Pipeline/omictools/";
+#}
+#else {
 	#the tools called will be within the same folder of the script
-	$sbptoolsfolder=get_parent_folder(abs_path(dirname($0)));
+	$omictoolsfolder=get_parent_folder(abs_path(dirname($0)));
 }
 
 
-my $mergefiles="$sbptoolsfolder/mergefiles/mergefiles_caller.pl";
-my $text2excel="$sbptoolsfolder/text2excel/text2excel.pl";
-my $metascape_gen="perl $sbptoolsfolder/metascape-gen/metascape-gen_caller.pl";
-my $gsea_gen="perl $sbptoolsfolder/gsea-gen/gsea-gen_caller.pl";
-my $gsea_gen_summary="perl $sbptoolsfolder/gsea-gen-summary/gsea-gen-summary.pl".scalar(add_dev($dev));
-my $rnaseq_motif="perl $sbptoolsfolder/rnaseq-motif/rnaseq-motif_caller.pl".scalar(add_dev($dev));
-my $rnaseq_motif_summary="perl $sbptoolsfolder/rnaseq-motif-summary/rnaseq-motif-summary.pl";
-my $parallel_job="perl $sbptoolsfolder/parallel-job/parallel-job_caller.pl"; 
+my $mergefiles="$omictoolsfolder/mergefiles/mergefiles_caller.pl";
+my $text2excel="$omictoolsfolder/text2excel/text2excel.pl";
+my $metascape_gen="perl $omictoolsfolder/metascape-gen/metascape-gen_caller.pl";
+my $gsea_gen="perl $omictoolsfolder/gsea-gen/gsea-gen_caller.pl";
+my $gsea_gen_summary="perl $omictoolsfolder/gsea-gen-summary/gsea-gen-summary.pl".scalar(add_dev($dev));
+my $rnaseq_motif="perl $omictoolsfolder/rnaseq-motif/rnaseq-motif_caller.pl".scalar(add_dev($dev));
+my $rnaseq_motif_summary="perl $omictoolsfolder/rnaseq-motif-summary/rnaseq-motif-summary.pl";
+my $parallel_job="perl $omictoolsfolder/parallel-job/parallel-job_caller.pl"; 
 
-my $rnaseqsummarynote="$sbptoolsfolder/rnaseq-summary/rnaseq-summary_note.txt";
+my $rnaseqsummarynote="$omictoolsfolder/rnaseq-summary/rnaseq-summary_note.txt";
 
 
-my $zip=find_program("/usr/local/bin/zip");
+my $zip=find_program("/apps/zip30/zip");
+
 
 
 ########
@@ -230,25 +233,27 @@ print LOG "\n";
 
 
 my %tx2ref=(
-	"Human.B38.Ensembl84"=> { 
-		"star"=>"/data/jyin/Databases/Genomes/Human/hg38/Human.B38.Ensembl84_STAR",
-		"chrsize"=>"/data/jyin/Databases/Genomes/Human/hg38/Human.B38.Ensembl84_STAR/chrNameLength.txt",
+	"Human.B38.Ensembl88"=> { 
+		"star"=>"/data/jyin/Databases/Genomes/Human/hg38/Human.B38.Ensembl88_STAR",
+		"rsem"=>"/data/jyin/Databases/Genomes/Human/hg38/Human.B38.Ensembl88_STAR/Human_RSEM",
+		"chrsize"=>"/data/jyin/Databases/Genomes/Human/hg38/Human.B38.Ensembl88_STAR/chrNameLength.txt",
 		"fasta"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.dna.primary_assembly_ucsc.fa",
-		"gtf"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.84_ucsc.gtf",
-		"homeranno"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.84_ucsc_homeranno.txt",
-		"geneanno"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.84_ucsc_gene_annocombo_rev.txt",
-		#"geneannogsea"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.84_ucsc_gene_annocombo_rev.txt",
-		"txanno"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.84_ucsc_tx_annocombo.txt"},
-	"Mouse.B38.Ensembl84"=>{ 
-		"star"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mouse.B38.Ensembl84_STAR",
-		"chrsize"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mouse.B38.Ensembl84_STAR/chrNameLength.txt",
+		"gtf"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.88_ucsc.gtf",
+		"homeranno"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.88_ucsc_homeranno.txt",
+		"geneanno"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.88_ucsc_gene_annocombo_rev.txt",
+		"txanno"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.88_ucsc_tx_annocombo.txt"},
+	"Mouse.B38.Ensembl88"=>{ 
+		"star"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mouse.B38.Ensembl88_STAR",
+		"rsem"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mouse.B38.Ensembl88_STAR/Mouse_RSEM",
+		"chrsize"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mouse.B38.Ensembl88_STAR/chrNameLength.txt",
 		"fasta"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.dna.primary_assembly_ucsc.fa",
-		"gtf"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.84_ucsc.gtf",
-		"homeranno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.84_ucsc_homeranno.txt",
-		"geneanno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.84_ucsc_gene_annocombo_rev.txt",
-		#"geneannogsea"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.84_tohumansymmbol_one2one.txt",		
-		"txanno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.84_ucsc_tx_anno.txt"}
+		"gtf"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc.gtf",
+		"homeranno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_homeranno.txt",
+		"geneanno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_gene_annocombo.txt",
+		"txanno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_tx_annocombo.txt"}
 );
+
+
 
 if(defined $tx2ref{$tx}) {
 	print STDERR "Starting analysis using $tx.\n\n" if $verbose;
@@ -286,8 +291,8 @@ my %report_cutoffs=(
 #Process
 ########
 
-print STDERR "\nsbptools rnaseq-summary $version running ...\n\n" if $verbose;
-print LOG "\nsbptools rnaseq-summary $version running ...\n\n";
+print STDERR "\nomictools rnaseq-summary $version running ...\n\n" if $verbose;
+print LOG "\nomictools rnaseq-summary $version running ...\n\n";
 
 #open input folders to find comparisons
 

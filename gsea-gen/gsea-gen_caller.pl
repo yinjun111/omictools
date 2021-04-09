@@ -2,7 +2,7 @@
 use strict;
 use Cwd qw(abs_path);
 use Getopt::Long;
-use List::MoreUtils qw(uniq);
+#use List::MoreUtils qw(uniq);
 use File::Basename qw(basename dirname);
 
 
@@ -28,15 +28,16 @@ use File::Basename qw(basename dirname);
 ########
 
 
-my $version="1.1";
+my $version="0.2";
 
 #v1.0a, perform GSEA analysis after cls and gct are generated.
 #v1.1 versioning
+#v0.2, AWS
 
 my $usage="
 gseagen
 version: $version\n
-Usage:  sbptools gsea-gen -e ./data/gene.results.merged.tpm.txt -o resultsfolder -s ./data/configV1.txt -n Group -t Human.B38.Ensembl84 -d h.all.v7.1\n
+Usage:  sbptools gsea-gen -e ./data/gene.results.merged.tpm.txt -o resultsfolder -s ./data/configV1.txt -n Group -t Human.B38.Ensembl88 -d h.all.v7.1\n
 
 Description: Perl script to generate gct and cls files for GSEA analysis based on gene expression matrix
 The script needs --comparisons to run GSEA. If no --comparisons is provided, it will just generate .gct and .cls files.
@@ -51,7 +52,7 @@ Parameters:
 	--groupName|-n    Name of group column for CLS generation
 
 	--tx|-t           Transcriptome
-                        Currently support Human.B38.Ensembl84, Mouse.B38.Ensembl84
+                        Currently support Human.B38.Ensembl88, Mouse.B38.Ensembl88
 	--chip            Use MSigDB chip file, e.g. Human_ENSEMBL_Gene_MSigDB.7.1 (optional)
 	--geneAnno|-ga    Gene annotation (optional)
 
@@ -146,9 +147,9 @@ my $sbptoolsfolder="/apps/sbptools/";
 
 #Dev version
 if($dev) {
-	$sbptoolsfolder="/home/jyin/Projects/Pipeline/sbptools/";
-}
-else {
+#	$sbptoolsfolder="/home/jyin/Projects/Pipeline/sbptools/";
+#}
+#else {
 	#the tools called will be within the same folder of the script
 	$sbptoolsfolder=get_parent_folder(abs_path(dirname($0)));
 }
@@ -367,7 +368,7 @@ else {
 ######
 
 #MSigdb, gmt annotation files 
-my $db2file="/data/jyin/Databases/GSEA/msigdb_v7.1_files_to_download_locally/msigdb_v7.1_GMTs/"."$db.symbols.gmt";
+my $db2file="/data/jyin/Databases/msigdb_v7.4_files_to_download_locally/msigdb_v7.4_GMTs/"."$db.symbols.gmt";
 
 if(!-e $db2file) {
 	print STDERR "ERROR:--db $db not supported. $db2file was not found.\n\n";
@@ -376,10 +377,10 @@ if(!-e $db2file) {
 
 #chip, gene annotation
 my $chipfile;
-if($tx eq "Human.B38.Ensembl84") {
+if($tx eq "Human.B38.Ensembl88") {
 	$chipfile="/data/jyin/Databases/GSEA/msigdb_v7.1_chip_files_to_download_locally/Human_ENSEMBL_Gene_MSigDB.7.1.chip";
 }
-elsif ($tx eq "Mouse.B38.Ensembl84") {
+elsif ($tx eq "Mouse.B38.Ensembl88") {
 	$chipfile="/data/jyin/Databases/GSEA/msigdb_v7.1_chip_files_to_download_locally/Mouse_ENSEMBL_Gene_ID_to_Human_Orthologs_MSigDB.7.1.chip";
 }
 else {

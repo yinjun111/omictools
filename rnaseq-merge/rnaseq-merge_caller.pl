@@ -12,7 +12,7 @@ use File::Basename qw(basename dirname);
 ########
 
 
-my $version="0.51";
+my $version="0.6";
 
 #v0.2, add filter function to get files for PCA
 #v0.3, removed -v, add -r implementation for local
@@ -23,12 +23,13 @@ my $version="0.51";
 #v0.42, process multiqc
 #v0.5, add expr-qc
 #v0.51, --group for expr-qc
+#v0.6, updated to AWS and v88
 
 my $usage="
 
 rnaseq-merge
 version: $version
-Usage: sbptools rnaseq-merge [parameters]
+Usage: omictools rnaseq-merge [parameters]
 
 Description: Merge rnaseq-process folder to get summarized QC, count, TPM etc.
 
@@ -44,7 +45,7 @@ Parameters:
 
 
     --tx|-t           Transcriptome
-                        Current support Human.B38.Ensembl84, Mouse.B38.Ensembl84
+                        Current support Human.B38.Ensembl88, Mouse.B38.Ensembl88
 
     --group|-g        Group name in config file for expr-qc plots [Group]
 
@@ -124,26 +125,26 @@ GetOptions(
 #Prerequisites
 ########
 
-my $sbptoolsfolder="/apps/sbptools/";
+my $omictoolsfolder="/apps/omictools/";
 
 #adding --dev switch for better development process
 if($dev) {
-	$sbptoolsfolder="/home/jyin/Projects/Pipeline/sbptools/";
-}
-else {
+#	$omictoolsfolder="/home/jyin/Projects/Pipeline/omictools/";
+#}
+#else {
 	#the tools called will be within the same folder of the script
-	$sbptoolsfolder=get_parent_folder(abs_path(dirname($0)));
+	$omictoolsfolder=get_parent_folder(abs_path(dirname($0)));
 }
 
-my $mergefiles="$sbptoolsfolder/mergefiles/mergefiles_caller.pl";
-my $parallel_job="$sbptoolsfolder/parallel-job/parallel-job_caller.pl";
-my $rnaseqmergefilter="$sbptoolsfolder/rnaseq-merge/rnaseq-merge_filter.R";
-my $count2cpm="$sbptoolsfolder/rnaseq-merge/count2cpm.R";
-my $process_multiqc="$sbptoolsfolder/rnaseq-merge/process_multiqc_summary.pl";
-my $expr_qc="$sbptoolsfolder/expr-qc/expr-qc.R";
+my $mergefiles="$omictoolsfolder/mergefiles/mergefiles_caller.pl";
+my $parallel_job="$omictoolsfolder/parallel-job/parallel-job_caller.pl";
+my $rnaseqmergefilter="$omictoolsfolder/rnaseq-merge/rnaseq-merge_filter.R";
+my $count2cpm="$omictoolsfolder/rnaseq-merge/count2cpm.R";
+my $process_multiqc="$omictoolsfolder/rnaseq-merge/process_multiqc_summary.pl";
+my $expr_qc="$omictoolsfolder/expr-qc/expr-qc.R";
 
 #used programs
-my $multiqc=find_program("/apps/python-3.5.2/bin/multiqc");
+my $multiqc=find_program("/apps/anaconda3/bin/multiqc");
 my $Rscript=find_program("/apps/R-4.0.2/bin/Rscript");
 
 
@@ -214,39 +215,39 @@ print LOG "\n";
 #test tx option
 
 #my %tx2ref=(
-#	"Human.B38.Ensembl84"=>"/home/jyin/Projects/Databases/Ensembl/v84/Human_STAR/Human_RSEM",
-#	"Mouse.B38.Ensembl84"=>"/home/jyin/Projects/Databases/Ensembl/v84/Mouse_STAR/Mouse_RSEM",
+#	"Human.B38.Ensembl88"=>"/home/jyin/Projects/Databases/Ensembl/v88/Human_STAR/Human_RSEM",
+#	"Mouse.B38.Ensembl88"=>"/home/jyin/Projects/Databases/Ensembl/v88/Mouse_STAR/Mouse_RSEM",
 #);
 
 
-
 my %tx2ref=(
-	"Human.B38.Ensembl84"=> { 
-		"star"=>"/data/jyin/Databases/Genomes/Human/hg38/Human.B38.Ensembl84_STAR",
-		"chrsize"=>"/data/jyin/Databases/Genomes/Human/hg38/Human.B38.Ensembl84_STAR/chrNameLength.txt",
+	"Human.B38.Ensembl88"=> { 
+		"star"=>"/data/jyin/Databases/Genomes/Human/hg38/Human.B38.Ensembl88_STAR",
+		"rsem"=>"/data/jyin/Databases/Genomes/Human/hg38/Human.B38.Ensembl88_STAR/Human_RSEM",
+		"chrsize"=>"/data/jyin/Databases/Genomes/Human/hg38/Human.B38.Ensembl88_STAR/chrNameLength.txt",
 		"fasta"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.dna.primary_assembly_ucsc.fa",
-		"gtf"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.84_ucsc.gtf",
-		"homeranno"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.84_ucsc_homeranno.txt",
-		"geneanno"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.84_ucsc_gene_annocombo_rev.txt",
-		"txanno"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.84_ucsc_tx_annocombo.txt"},
-	"Mouse.B38.Ensembl84"=>{ 
-		"star"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mouse.B38.Ensembl84_STAR",
-		"chrsize"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mouse.B38.Ensembl84_STAR/chrNameLength.txt",
+		"gtf"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.88_ucsc.gtf",
+		"homeranno"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.88_ucsc_homeranno.txt",
+		"geneanno"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.88_ucsc_gene_annocombo_rev.txt",
+		"txanno"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.88_ucsc_tx_annocombo.txt"},
+	"Mouse.B38.Ensembl88"=>{ 
+		"star"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mouse.B38.Ensembl88_STAR",
+		"rsem"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mouse.B38.Ensembl88_STAR/Mouse_RSEM",
+		"chrsize"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mouse.B38.Ensembl88_STAR/chrNameLength.txt",
 		"fasta"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.dna.primary_assembly_ucsc.fa",
-		"gtf"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.84_ucsc.gtf",
-		"homeranno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.84_ucsc_homeranno.txt",
-		"geneanno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.84_ucsc_gene_annocombo_rev.txt",
-		"txanno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.84_ucsc_tx_anno.txt"}
+		"gtf"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc.gtf",
+		"homeranno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_homeranno.txt",
+		"geneanno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_gene_annocombo.txt",
+		"txanno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_tx_annocombo.txt"}
 );
-
 
 
 ########
 #Process
 ########
 
-print STDERR "\nsbptools rnaseq-merge $version running ...\n\n" if $verbose;
-print LOG "\nsbptools rnaseq-merge $version running ...\n\n";
+print STDERR "\nomictools rnaseq-merge $version running ...\n\n" if $verbose;
+print LOG "\nomictools rnaseq-merge $version running ...\n\n";
 
 
 if(defined $tx2ref{$tx}) {

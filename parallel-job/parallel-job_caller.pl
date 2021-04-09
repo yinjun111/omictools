@@ -5,15 +5,17 @@ use Cwd qw(abs_path);
 use List::Util qw(min);
 
 
-#CutAdapt+FASTQC+RSEM+STAR
 ########
 #Updates
 ########
 
+my $version="0.21";
 #0.11 change procs to ppn, procs is still usable but hidden
 #0.12 add --asis to submit the task directly
 #0.13 add note for --nodes
 #0.14 support job submission assigning to multiple nodes
+#0.2, update for AWS ParallelCluster Torque
+#0.21, minor correction
 
 ########
 #Prerequisites
@@ -26,19 +28,19 @@ use List::Util qw(min);
 #Interface
 ########
 
-
-my $version="0.13";
-
-
 my $usage="
 
 parallel-job
 version: $version
 
-Usage: sbptools parallel-job -i yourscripts.sh -n yourscripts -o jobsubmissionfolder -t 5 --nodes 1 --procs 4 -m 10gb -r
-Or simpley type: sbptools parallel-job -i yourscripts.sh -r
+Usage: omictools parallel-job -i yourscripts.sh -n yourscripts -o jobsubmissionfolder -t 5 --nodes 1 --procs 4 -m 10gb -r
+Or simpley type: omictools parallel-job -i yourscripts.sh -r
 
-Description: In Firefly, BSR HPC cluster, use multiple controled qsub sessions for paralleling.
+#Example, use 4 cpus per task. If a node has 12 cpus, only 3 tasks will be ran in that node. This is to control the number of jobs per node.
+omictools parallel-job -i yourscripts.sh -o jobsubmissionfolder -t 20 --ppn 4 -r
+
+
+Description: In Torque HPC cluster, use multiple controled qsub sessions for paralleling.
 
 Parameters:
 
@@ -47,9 +49,9 @@ Parameters:
     --name|-n         Prefix name of the task. Default as your script name
 	
     Output files
-    --wo|-o           working output directory. Default as folder of your first input script
-    --eo              SGE error message output directory. Default as folder of your input script
-    --oo              SGE output message output directory. Default as folder of your input script
+    --wo|-o           Working output directory. Default as folder of your first input script
+    --eo              Torque error message output directory. Default as folder of your input script
+    --oo              Toruqe output message output directory. Default as folder of your input script
 
     Control the tasks submited to the cluster
     --task|-t         No. of tasks submitted to cluster for each script file[10]
@@ -58,10 +60,7 @@ Parameters:
       but you can't mix --nodes and --ncpus together.
 	A) by specifying number of nodes and process
     --nodes           The value can be a) No. of nodes for each task, e.g. 1
-                                       b) Name of the node(s), 
-                                          e.g. n001.cluster.com to submit to n001 only
-                                          e.g. n002.cluster.com+n003.cluster.com
-                                                 to submit to n002 and n003 				  
+                                       b) Name of the node(s)				  
     --ppn             No. of processes for each task	
 	B) by specifying the total number of cpus
     --ncpus           No. of cpus for each task for tasks can't use multiple nodes
@@ -157,8 +156,8 @@ my @userattrs=getpwnam($user);
 my @groupattrs=getgrgid($userattrs[3]);
 
 
-print STDERR "\nWelcome $userattrs[6]($user) from $groupattrs[0] to Firefly!\n";
-#print LOG "\nWelcome $userattrs[6]($user) from $groupattrs[0] to Firefly!\n";
+print STDERR "\nWelcome $userattrs[6]($user) from $groupattrs[0] to Torque HPC!\n";
+#print LOG "\nWelcome $userattrs[6]($user) from $groupattrs[0] to Torque HPC!\n";
 
 
 ########

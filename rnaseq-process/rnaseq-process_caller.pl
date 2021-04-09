@@ -12,27 +12,15 @@ use File::Basename qw(basename dirname);
 ########
 
 
-my $version="0.55";
+my $version="0.1";
 
-#0.2b change ensembl to UCSC format
-#0.2c add bw generation
-#0.2d correct bug for PE
-#0.3 add runmode, always show -v
-#v0.31, solves screen envinroment problem
-#v0.4 add find_program, and queuejob, --dev switch, add 30gb requirement
-#v0.41 option to turn off bamcoverage due to long processing time. changed cutadapt logging
-#v0.5 change alignment procedure to be compatible with more programs. bamcoverage changed.
-#v0.51, support different versions
-#v0.52, correct bamcoverage bug
-#v0.53, rm temporary files. only keep genome bam
-#v0.54, option to keep fastq
-#v0.55, add --nodes/--ppn for Firefly
+#0.1 change parameters, v88 and AWS
 
 my $usage="
 
 rnaseq-process
 version: $version
-Usage: sbptools rnaseq-process [parameters]
+Usage: omictools rnaseq-process [parameters]
 
 Description: 
 
@@ -47,14 +35,14 @@ Parameters:
     --output|-o       Output folder
 
     --tx|-t           Transcriptome
-                        Current support Human.B38.Ensembl84, Mouse.B38.Ensembl84
+                        Current support Human.B38.Ensembl88, Mouse.B38.Ensembl88
 
     --bamcoverage     Produce bw file for bam files [F]
     --keepfastq       Keep Cutadapt trimmed Fastq [F]	
 	
     --runmode|-r      Where to run the scripts, local, cluster or none [none]
                             local is to run locally using \"parallel\", recommended for Falco
-                            cluster is to submit jobs to PBS queue in the HPC, recommended for Firefly
+                            cluster is to submit jobs to PBS queue in the HPC
                             none is to generate scripts only, after that,
                                    you can use \"sh rnaseq-merge_local_submission.sh\" to run locally, or
                                    you can use \"sh rnaseq-merge_cluster_submission.sh\" to submit job to PBS
@@ -148,26 +136,29 @@ unless(defined $task && length($task)>0) {
 
 
 
-my $sbptoolsfolder="/apps/sbptools/";
+my $omictoolsfolder="/apps/omictools/";
 
 #adding --dev switch for better development process
 if($dev) {
-	$sbptoolsfolder="/home/jyin/Projects/Pipeline/sbptools/";
-}
-else {
+#	$omictoolsfolder="/home/centos/Pipeline/omictools/";
+#}
+#else {
 	#the tools called will be within the same folder of the script
-	$sbptoolsfolder=get_parent_folder(abs_path(dirname($0)));
+	$omictoolsfolder=get_parent_folder(abs_path(dirname($0)));
 }
 
-my $parallel_job="$sbptoolsfolder/parallel-job/parallel-job_caller.pl";
+my $parallel_job="$omictoolsfolder/parallel-job/parallel-job_caller.pl";
 
 
-my $cutadapt=find_program("/apps/python-3.5.2/bin/cutadapt");
+my $cutadapt=find_program("/apps/anaconda3/bin/cutadapt");
 my $fastqc=find_program("/apps/FastQC/fastqc");
-my $rsem=find_program("/apps/RSEM-1.3.1/rsem-calculate-expression");
-my $star=find_program("/apps/STAR-master/bin/Linux_x86_64/STAR");
-my $bamcoverage=find_program("/apps/python-3.5.2/bin/bamCoverage");
-my $samtools=find_program("/apps/samtools-1.3.1/bin/samtools");
+my $rsem=find_program("/apps/RSEM-1.3.3/rsem-calculate-expression");
+my $star=find_program("/apps/STAR-2.7.8a/bin/Linux_x86_64/STAR");
+my $bamcoverage=find_program("/apps/anaconda3/bin/bamCoverage");
+my $samtools=find_program("/apps/samtools-1.12/bin/samtools");
+
+
+
 
 
 #######
@@ -222,29 +213,29 @@ print LOG "\n";
 #test tx option
 
 #my %tx2ref=(
-#	"Human.B38.Ensembl84"=>"/data/jyin/Databases/Genomes/Human/hg38/Human.B38.Ensembl84_STAR/Human_RSEM",
-#	"Mouse.B38.Ensembl84"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mouse.B38.Ensembl84_STAR/Mouse_RSEM",
+#	"Human.B38.Ensembl88"=>"/data/jyin/Databases/Genomes/Human/hg38/Human.B38.Ensembl88_STAR/Human_RSEM",
+#	"Mouse.B38.Ensembl88"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mouse.B38.Ensembl88_STAR/Mouse_RSEM",
 #);
 
 my %tx2ref=(
-	"Human.B38.Ensembl84"=> { 
-		"star"=>"/data/jyin/Databases/Genomes/Human/hg38/Human.B38.Ensembl84_STAR",
-		"rsem"=>"/data/jyin/Databases/Genomes/Human/hg38/Human.B38.Ensembl84_STAR/Human_RSEM",
-		"chrsize"=>"/data/jyin/Databases/Genomes/Human/hg38/Human.B38.Ensembl84_STAR/chrNameLength.txt",
+	"Human.B38.Ensembl88"=> { 
+		"star"=>"/data/jyin/Databases/Genomes/Human/hg38/Human.B38.Ensembl88_STAR",
+		"rsem"=>"/data/jyin/Databases/Genomes/Human/hg38/Human.B38.Ensembl88_STAR/Human_RSEM",
+		"chrsize"=>"/data/jyin/Databases/Genomes/Human/hg38/Human.B38.Ensembl88_STAR/chrNameLength.txt",
 		"fasta"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.dna.primary_assembly_ucsc.fa",
-		"gtf"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.84_ucsc.gtf",
-		"homeranno"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.84_ucsc_homeranno.txt",
-		"geneanno"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.84_ucsc_gene_annocombo_rev.txt",
-		"txanno"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.84_ucsc_tx_annocombo.txt"},
-	"Mouse.B38.Ensembl84"=>{ 
-		"star"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mouse.B38.Ensembl84_STAR",
-		"rsem"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mouse.B38.Ensembl84_STAR/Mouse_RSEM",
-		"chrsize"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mouse.B38.Ensembl84_STAR/chrNameLength.txt",
+		"gtf"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.88_ucsc.gtf",
+		"homeranno"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.88_ucsc_homeranno.txt",
+		"geneanno"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.88_ucsc_gene_annocombo_rev.txt",
+		"txanno"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.88_ucsc_tx_annocombo.txt"},
+	"Mouse.B38.Ensembl88"=>{ 
+		"star"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mouse.B38.Ensembl88_STAR",
+		"rsem"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mouse.B38.Ensembl88_STAR/Mouse_RSEM",
+		"chrsize"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mouse.B38.Ensembl88_STAR/chrNameLength.txt",
 		"fasta"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.dna.primary_assembly_ucsc.fa",
-		"gtf"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.84_ucsc.gtf",
-		"homeranno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.84_ucsc_homeranno.txt",
-		"geneanno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.84_ucsc_gene_annocombo_rev.txt",
-		"txanno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.84_ucsc_tx_anno.txt"}
+		"gtf"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc.gtf",
+		"homeranno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_homeranno.txt",
+		"geneanno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_gene_annocombo.txt",
+		"txanno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_tx_annocombo.txt"}
 );
 
 
@@ -252,8 +243,8 @@ my %tx2ref=(
 #Process
 ########
 
-print STDERR "\nsbptools rnaseq-process $version running ...\n\n" if $verbose;
-print LOG "\nsbptools rnaseq-process $version running ...\n\n";
+print STDERR "\nomictools rnaseq-process $version running ...\n\n" if $verbose;
+print LOG "\nomictools rnaseq-process $version running ...\n\n";
 
 
 if(defined $tx2ref{$tx}) {
@@ -682,7 +673,7 @@ elsif($runmode eq "local") {
 }
 elsif($runmode eq "cluster") {
 	#cluster mode
-	#implement for Firefly
+	#implement for Torque
 	
 	system("sh $scriptclusterrun");
 	print LOG "sh $scriptclusterrun;\n\n";

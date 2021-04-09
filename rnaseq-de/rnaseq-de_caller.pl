@@ -11,7 +11,7 @@ use File::Basename qw(basename dirname);
 ########
 
 
-my $version="0.61";
+my $version="0.7";
 
 #version 0.2a, add r version log
 #v0.3 add runmode
@@ -21,13 +21,13 @@ my $version="0.61";
 #v0.51, versioning
 #v0.6, major updates planned for R4.0, comparisons of multiple groups. turn off txde
 #v0.61, adding -s for --comparisons
-
+#v0.7, v88 and AWS
 
 my $usage="
 
 rnaseq-de
 version: $version
-Usage: sbptools rnaseq-de [parameters]
+Usage: omictools rnaseq-de [parameters]
 
 Description: Differential Expression (DE) tests using DESeq2. This script works for most of the counting based data, e.g. RNA-Seq, ChIP-Seq, ATAC-Seq
 
@@ -181,22 +181,22 @@ GetOptions(
 #Prerequisites
 ########
 
-my $sbptoolsfolder="/apps/sbptools/";
+my $omictoolsfolder="/apps/omictools/";
 
 #adding --dev switch for better development process
 if($dev) {
-	$sbptoolsfolder="/home/jyin/Projects/Pipeline/sbptools/";
-}
-else {
+#	$omictoolsfolder="/home/centos/Projects/Pipeline/omictools/";
+#}
+#else {
 	#the tools called will be within the same folder of the script
-	$sbptoolsfolder=get_parent_folder(dirname(abs_path($0)));
+	$omictoolsfolder=get_parent_folder(dirname(abs_path($0)));
 }
 
 
-#sbptools
-my $descript="$sbptoolsfolder/rnaseq-de/de_test_caller.R";
-my $mergefiles="$sbptoolsfolder/mergefiles/mergefiles_caller.pl";
-my $parallel_job="$sbptoolsfolder/parallel-job/parallel-job_caller.pl";
+#omictools
+my $descript="$omictoolsfolder/rnaseq-de/de_test_caller.R";
+my $mergefiles="$omictoolsfolder/mergefiles/mergefiles_caller.pl";
+my $parallel_job="$omictoolsfolder/parallel-job/parallel-job_caller.pl";
 
 
 my $r=find_program("/apps/R-4.0.2/bin/R");
@@ -254,8 +254,8 @@ print LOG "Current version: $version\n\n";
 
 print LOG "\n";
 
-print STDERR "\nsbptools rnaseq-de $version running ...\n\n" if $verbose;
-print LOG "\nsbptools rnaseq-de $version running ...\n\n";
+print STDERR "\nomictools rnaseq-de $version running ...\n\n" if $verbose;
+print LOG "\nomictools rnaseq-de $version running ...\n\n";
 
 
 
@@ -290,22 +290,24 @@ close RLOG;
 #may need to change for different annotation versions
 
 my %tx2ref=(
-	"Human.B38.Ensembl84"=> { 
-		"star"=>"/data/jyin/Databases/Genomes/Human/hg38/Human.B38.Ensembl84_STAR",
-		"chrsize"=>"/data/jyin/Databases/Genomes/Human/hg38/Human.B38.Ensembl84_STAR/chrNameLength.txt",
+	"Human.B38.Ensembl88"=> { 
+		"star"=>"/data/jyin/Databases/Genomes/Human/hg38/Human.B38.Ensembl88_STAR",
+		"rsem"=>"/data/jyin/Databases/Genomes/Human/hg38/Human.B38.Ensembl88_STAR/Human_RSEM",
+		"chrsize"=>"/data/jyin/Databases/Genomes/Human/hg38/Human.B38.Ensembl88_STAR/chrNameLength.txt",
 		"fasta"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.dna.primary_assembly_ucsc.fa",
-		"gtf"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.84_ucsc.gtf",
-		"homeranno"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.84_ucsc_homeranno.txt",
-		"geneanno"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.84_ucsc_gene_annocombo_rev.txt",
-		"txanno"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.84_ucsc_tx_annocombo.txt"},
-	"Mouse.B38.Ensembl84"=>{ 
-		"star"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mouse.B38.Ensembl84_STAR",
-		"chrsize"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mouse.B38.Ensembl84_STAR/chrNameLength.txt",
+		"gtf"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.88_ucsc.gtf",
+		"homeranno"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.88_ucsc_homeranno.txt",
+		"geneanno"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.88_ucsc_gene_annocombo_rev.txt",
+		"txanno"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.88_ucsc_tx_annocombo.txt"},
+	"Mouse.B38.Ensembl88"=>{ 
+		"star"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mouse.B38.Ensembl88_STAR",
+		"rsem"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mouse.B38.Ensembl88_STAR/Mouse_RSEM",
+		"chrsize"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mouse.B38.Ensembl88_STAR/chrNameLength.txt",
 		"fasta"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.dna.primary_assembly_ucsc.fa",
-		"gtf"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.84_ucsc.gtf",
-		"homeranno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.84_ucsc_homeranno.txt",
-		"geneanno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.84_ucsc_gene_annocombo_rev.txt",
-		"txanno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.84_ucsc_tx_anno.txt"}
+		"gtf"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc.gtf",
+		"homeranno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_homeranno.txt",
+		"geneanno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_gene_annocombo.txt",
+		"txanno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_tx_annocombo.txt"}
 );
 
 
