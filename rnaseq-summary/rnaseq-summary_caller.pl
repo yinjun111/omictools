@@ -74,8 +74,8 @@ Parameters:
     --run_gsea-gen      Whether to run omictools gsea-gen, run by default [cluster]
                         use \"none\" to turn off
 
-    --gseadbs           Default dbs to run are [h.all.v7.1,c5.bp.v7.1]
-                        Other popular dbs include c2.cp.kegg.v7.1,c3.tft.v7.1,c5.cc.v7.1,c5.mf.v7.1
+    --gseadbs           Default dbs to run are [h.all.v7.4,c5.bp.v7.4]
+                        Other popular dbs include c2.cp.kegg.v7.4,c3.tft.v7.4,c5.cc.v7.4,c5.mf.v7.4
 	
 ";
 
@@ -108,7 +108,7 @@ my $fccutoff;
 my $qcutoff;
 my $geneinput;
 my $txinput;
-my $gseadbs="h.all.v7.1,c5.bp.v7.1";
+my $gseadbs="h.all.v7.4,c5.go.bp.v7.4";
 my $runrnaseqmotif="none";
 my $rungseagen="cluster";
 my $verbose=1;
@@ -723,7 +723,7 @@ my $gsearunnum=0;
 my @gseascripts;
 
 #Only two tests are performed due to size of the GSEA results
-#,c2.cp.kegg.v7.1,c3.tft.v7.1,c5.cc.v7.1,c5.mf.v7.1
+#,c2.cp.kegg.v7.4,c3.tft.v7.4,c5.cc.v7.4,c5.mf.v7.4
 
 
 #open(OUT,">$gsea_gen_run") || die "ERROR:Can't write into $gsea_gen_run.$!\n\n";

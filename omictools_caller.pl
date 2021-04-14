@@ -45,7 +45,7 @@ Parameters:
     #Misc tools
     ########
     mergefiles        Use a model file to merge different files together
-    text2excel        Build excel file using text file (by Andrew Hodges)
+    text2excel        Build excel file using text file
 
     ensembl2ucsc      Convert Ensembl gtf/fasta/bed into UCSC format
 

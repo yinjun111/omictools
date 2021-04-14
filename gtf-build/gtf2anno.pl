@@ -6,10 +6,10 @@ use File::Basename qw(basename dirname);
 
 
 #version
-my $version=0.2;
+my $version=0.21;
 
 #0.2, Use gene symbol as index. Add .number for duplicated gene names. If duplicated, use the longest as the default one
-
+#0.21, Dont' take genes not in complete chromosomes
 
 my $usage="
 
@@ -138,8 +138,11 @@ while(<IN>) {
 		@annotitle=@array;
 	}
 	else {
-		$gene2info{$array[0]}{"description"}=$array[1];
-		$gene2info{$array[0]}{"gc_content"}=$array[2];
+		if(defined $gene2info{$array[0]}) {
+			#don't need genes not defined above, which are genes not in complete chromosomes
+			$gene2info{$array[0]}{"description"}=$array[1];
+			$gene2info{$array[0]}{"gc_content"}=$array[2];
+		}
 	}
 	
 	$linenum++;

@@ -43,7 +43,7 @@ Mandatory Parameters:
                            first column as sample name.
 
     --tx|-t           Transcriptome
-                        Current support Human.B38.Ensembl84, Mouse.B38.Ensembl84
+                        Current support Human.B38.Ensembl88, Mouse.B38.Ensembl88
 
     --formula|-f      Formula for GLM, e.g. ~Group.
                           the last factor of the formula is used for comparison

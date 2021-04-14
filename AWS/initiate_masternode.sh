@@ -7,7 +7,6 @@ sudo yum -y install emacs git wget zip screen
 #Directories for shared apps and data
 #####
 
-sudo mkdir /apps
 sudo chmod 755 /apps
 sudo chown centos /apps
 
@@ -114,6 +113,26 @@ sudo /apps/anaconda3/bin/python3 -m pip install deeptools
 #RSeQC
 sudo /apps/anaconda3/bin/python3 -m pip install RSeQC
 
+#######
+#Install perl modules
+#######
+
+sudo yum -y install cpan
+
+#install cpanm
+wget -O - http://cpanmin.us | sudo perl - --self-upgrade
+ 
+#install modules
+mkdir /apps/perl5lib/
+
+echo "export PERL5LIB=/apps/perl5lib/lib/perl5" >> /home/centos/.bashrc;source /home/centos/.bashrc
+
+cpanm --local-lib=/apps/perl5lib/ List::Utils
+cpanm --local-lib=/apps/perl5lib/ File::Which
+cpanm --local-lib=/apps/perl5lib/ Digest::MD5
+cpanm --local-lib=/apps/perl5lib/ Excel::Writer::XLSX
+
+sudo chmod -R 755 /apps/perl5lib/
 
 ########
 #Programs for RNASeq
@@ -140,6 +159,9 @@ cd /home/centos/Programs
 wget https://github.com/alexdobin/STAR/archive/2.7.8a.tar.gz
 tar xzvf 2.7.8a.tar.gz
 sudo cp -R STAR-2.7.8a/ /apps/
+#need to recompile?
+cd /apps/STAR-2.7.8a/source
+sudo make STAR
 
 #install samtools
 wget https://github.com/samtools/samtools/releases/download/1.12/samtools-1.12.tar.bz2
@@ -168,3 +190,8 @@ sudo cp -R GSEA_Linux_4.0.3 /apps/
 sudo chown -R centos /data/jyin/
 sudo chown -R centos /home/centos/Programs
 sudo chown -R centos /home/centos/Pipeline
+sudo chown -R centos /apps/perl5lib/
+
+echo "Pcluster initiation completed!"
+date
+

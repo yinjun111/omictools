@@ -16,10 +16,11 @@ use File::Basename qw(basename dirname);
 ########
 
 
-my $version="0.12";
+my $version="0.2";
 
 #v0.11, add heatmap generation to p/q matrix
 #v0.12, R 4.0
+#v0.2, AWS
 
 my $usage="
 
@@ -33,7 +34,7 @@ Parameters:
     --in|-i           Input folder, containing GSEA results. Can be multiple folders separated by \",\"
     --out|-o          Output folder
     --db|-d           Selected databases to summarize, separated by \",\" (optional)
-                          e.g. h.all.v7.1,c5.bp.v7.1
+                          e.g. h.all.v7.4,c5.bp.v7.4
                       If not defined, by default, gsea-gen-summary will summarize all the gsea-gen results
     --pcutoff|-p      pvalue cutoff [0.05]
     --qcutoff|-q      FDR qval cutoff. Use \"-q 2\" to ensure q of 1 is not selected [2]
@@ -94,21 +95,21 @@ GetOptions(
 my $r=find_program("/apps/R-4.0.2/bin/R");
 my $rscript=find_program("/apps/R-4.0.2/bin/Rscript");
 
-my $sbptoolsfolder="/apps/sbptools/";
+my $omictoolsfolder="/apps/omictools/";
 
 #adding --dev switch for better development process
 if($dev) {
-	$sbptoolsfolder="/home/jyin/Projects/Pipeline/sbptools/";
+	$omictoolsfolder="/home/jyin/Projects/Pipeline/omictools/";
 }
 else {
 	#the tools called will be within the same folder of the script
-	$sbptoolsfolder=get_parent_folder(dirname(abs_path($0)));
+	$omictoolsfolder=get_parent_folder(dirname(abs_path($0)));
 }
 
 
 
-#sbptools
-my $gs_heatmap="$sbptoolsfolder/gsea-gen-summary/gs_heatmap.R";
+#omictools
+my $gs_heatmap="$omictoolsfolder/gsea-gen-summary/gs_heatmap.R";
 
 
 ######
@@ -163,7 +164,7 @@ my %seldbs;
 
 if(defined $db && length($db)>0) {
 	foreach my $dbsel (split(",",$db)) {
-		my $db2file="/data/jyin/Databases/GSEA/msigdb_v7.1_files_to_download_locally/msigdb_v7.1_GMTs/"."$dbsel.symbols.gmt";
+		my $db2file="/data/jyin/Databases/GSEA/msigdb_v7.4_files_to_download_locally/msigdb_v7.4_GMTs/"."$dbsel.symbols.gmt";
 
 		if(-e $db2file) {
 			$seldbs{$dbsel}++;
@@ -216,7 +217,7 @@ foreach my $infolder (split(",",$infolders)) {
 		my $filename;
 		my $dbused;
 		
-		#Summary2/forGSEA/CT_MG132_vs_CT_DMSO-c2.cp.kegg.v7.1/my_analysis.Gsea.1595291435163/
+		#Summary2/forGSEA/CT_MG132_vs_CT_DMSO-c2.cp.kegg.v7.4/my_analysis.Gsea.1595291435163/
 		if($infile=~/([^\/]+)-([ch][^-]+)\/my_analysis.Gsea.\d+\/gsea_report_for_([^\/]+)_\d+.xls/) {
 			$filename=$1."-".$3;
 			$dbused=$2;

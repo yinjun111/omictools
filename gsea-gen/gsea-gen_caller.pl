@@ -6,18 +6,6 @@ use Getopt::Long;
 use File::Basename qw(basename dirname);
 
 
-#Andrew Hodges, PhD
-#BI Shared Resource, SBP
-#11/6/2019
-#Update: 4/22/2020
-#(C)2019-2020, SBP
-#Jun Yin, PhD
-#BI Shared Resource, SBP
-#7/20/2020
-#Update: 4/22/2020
-#(C)2019-2020, SBP
-
-
 ########
 #Prerequisites
 ########
@@ -37,7 +25,7 @@ my $version="0.2";
 my $usage="
 gseagen
 version: $version\n
-Usage:  sbptools gsea-gen -e ./data/gene.results.merged.tpm.txt -o resultsfolder -s ./data/configV1.txt -n Group -t Human.B38.Ensembl88 -d h.all.v7.1\n
+Usage:  omictools gsea-gen -e ./data/gene.results.merged.tpm.txt -o resultsfolder -s ./data/configV1.txt -n Group -t Human.B38.Ensembl88 -d h.all.v7.4\n
 
 Description: Perl script to generate gct and cls files for GSEA analysis based on gene expression matrix
 The script needs --comparisons to run GSEA. If no --comparisons is provided, it will just generate .gct and .cls files.
@@ -53,18 +41,18 @@ Parameters:
 
 	--tx|-t           Transcriptome
                         Currently support Human.B38.Ensembl88, Mouse.B38.Ensembl88
-	--chip            Use MSigDB chip file, e.g. Human_ENSEMBL_Gene_MSigDB.7.1 (optional)
+	--chip            Use MSigDB chip file, e.g. Human_ENSEMBL_Gene_MSigDB.7.4 (optional)
 	--geneAnno|-ga    Gene annotation (optional)
 
 	--comparisons|-c  Comparisons, one pair comparison is recommended(optional)
 
 	--db|-d           MSigDB database to be used
                        Recommended:
-                        h.all.v7.1
-                        c5.bp.v7.1
+                        h.all.v7.4
+                        c5.bp.v7.4
 						
                        Others include: 
-                       c1.all.v7.1,c2.all.v7.1,c2.cgp.v7.1,c2.cp.biocarta.v7.1,c2.cp.kegg.v7.1,c2.cp.pid.v7.1,c2.cp.reactome.v7.1,c2.cp.v7.1,c3.all.v7.1,c3.mir.mirdb.v7.1,c3.mir.mir_legacy.v7.1,c3.mir.v7.1,c3.tft.gtrd.v7.1,c3.tft.tft_legacy.v7.1,c3.tft.v7.1,c4.all.v7.1,c4.cgn.v7.1,c4.cm.v7.1,c5.all.v7.1,c5.bp.v7.1,c5.cc.v7.1,c5.mf.v7.1,c6.all.v7.1,c7.all.v7.1,h.all.v7.1
+                       c1.all.v7.4,c2.all.v7.4,c2.cgp.v7.4,c2.cp.biocarta.v7.4,c2.cp.kegg.v7.4,c2.cp.pid.v7.4,c2.cp.reactome.v7.4,c2.cp.v7.4,c3.all.v7.4,c3.mir.mirdb.v7.4,c3.mir.mir_legacy.v7.4,c3.mir.v7.4,c3.tft.gtrd.v7.4,c3.tft.tft_legacy.v7.4,c3.tft.v7.4,c4.all.v7.4,c4.cgn.v7.4,c4.cm.v7.4,c5.all.v7.4,c5.bp.v7.4,c5.cc.v7.4,c5.mf.v7.4,c6.all.v7.4,c7.all.v7.4,h.all.v7.4
 
     --runmode|-r      Where to run the scripts, local, system, server or none [none]
                                   none, only prints scripts
@@ -140,22 +128,22 @@ GetOptions(
 #Prerequisites
 ########
 
-#my $sbptools=locate_cmd("sbptools","/usr/bin/sbptools");
-#my $motiffinder="$sbptools motif-finder"; #improve compatibility
+#my $omictools=locate_cmd("omictools","/usr/bin/omictools");
+#my $motiffinder="$omictools motif-finder"; #improve compatibility
 
-my $sbptoolsfolder="/apps/sbptools/";
+my $omictoolsfolder="/apps/omictools/";
 
 #Dev version
 if($dev) {
-#	$sbptoolsfolder="/home/jyin/Projects/Pipeline/sbptools/";
+#	$omictoolsfolder="/home/jyin/Projects/Pipeline/omictools/";
 #}
 #else {
 	#the tools called will be within the same folder of the script
-	$sbptoolsfolder=get_parent_folder(abs_path(dirname($0)));
+	$omictoolsfolder=get_parent_folder(abs_path(dirname($0)));
 }
 
 
-my $parallel_job="perl $sbptoolsfolder/parallel-job/parallel-job_caller.pl"; 
+my $parallel_job="perl $omictoolsfolder/parallel-job/parallel-job_caller.pl"; 
 my $gsea_cli="/apps/GSEA_Linux_4.0.3/gsea-cli.sh GSEA";
 
 
@@ -368,7 +356,7 @@ else {
 ######
 
 #MSigdb, gmt annotation files 
-my $db2file="/data/jyin/Databases/msigdb_v7.4_files_to_download_locally/msigdb_v7.4_GMTs/"."$db.symbols.gmt";
+my $db2file="/data/jyin/Databases/GSEA/msigdb_v7.4_files_to_download_locally/msigdb_v7.4_GMTs/"."$db.symbols.gmt";
 
 if(!-e $db2file) {
 	print STDERR "ERROR:--db $db not supported. $db2file was not found.\n\n";
@@ -378,10 +366,10 @@ if(!-e $db2file) {
 #chip, gene annotation
 my $chipfile;
 if($tx eq "Human.B38.Ensembl88") {
-	$chipfile="/data/jyin/Databases/GSEA/msigdb_v7.1_chip_files_to_download_locally/Human_ENSEMBL_Gene_MSigDB.7.1.chip";
+	$chipfile="/data/jyin/Databases/GSEA/msigdb_v7.4_chip_files_to_download_locally/Human_ENSEMBL_Gene_ID_MSigDB.v7.4.chip";
 }
 elsif ($tx eq "Mouse.B38.Ensembl88") {
-	$chipfile="/data/jyin/Databases/GSEA/msigdb_v7.1_chip_files_to_download_locally/Mouse_ENSEMBL_Gene_ID_to_Human_Orthologs_MSigDB.7.1.chip";
+	$chipfile="/data/jyin/Databases/GSEA/msigdb_v7.4_chip_files_to_download_locally/Mouse_ENSEMBL_Gene_ID_Human_Orthologs_MSigDB.v7.4.chip";
 }
 else {
 	print STDERR "ERROR: --tx $tx not recognized.\n\n";
@@ -435,7 +423,7 @@ if($runmode eq "none") {
 elsif($runmode eq "local") {
 	#local mode
 	
-	#need to replace with "sbptools queuejob" later
+	#need to replace with "omictools queuejob" later
 
 	system($localcommand);
 	print LOG "$localcommand;\n\n";

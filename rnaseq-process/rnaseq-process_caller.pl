@@ -12,9 +12,23 @@ use File::Basename qw(basename dirname);
 ########
 
 
-my $version="0.1";
+my $version="0.6";
 
-#0.1 change parameters, v88 and AWS
+#0.2b change ensembl to UCSC format
+#0.2c add bw generation
+#0.2d correct bug for PE
+#0.3 add runmode, always show -v
+#v0.31, solves screen envinroment problem
+#v0.4 add find_program, and queuejob, --dev switch, add 30gb requirement
+#v0.41 option to turn off bamcoverage due to long processing time. changed cutadapt logging
+#v0.5 change alignment procedure to be compatible with more programs. bamcoverage changed.
+#v0.51, support different versions
+#v0.52, correct bamcoverage bug
+#v0.53, rm temporary files. only keep genome bam
+#v0.54, option to keep fastq
+#v0.55, add --nodes/--ppn for Firefly
+#v0.6 change parameters, v88 and AWS
+
 
 my $usage="
 
@@ -98,6 +112,8 @@ my $ncpus=4;
 my $ppn;
 my $nodes;
 
+my $threads=4; #threads used by cutadapt and STAR
+
 my $dev=0; #developmental version
 
 
@@ -153,12 +169,9 @@ my $parallel_job="$omictoolsfolder/parallel-job/parallel-job_caller.pl";
 my $cutadapt=find_program("/apps/anaconda3/bin/cutadapt");
 my $fastqc=find_program("/apps/FastQC/fastqc");
 my $rsem=find_program("/apps/RSEM-1.3.3/rsem-calculate-expression");
-my $star=find_program("/apps/STAR-2.7.8a/bin/Linux_x86_64/STAR");
+my $star=find_program("/apps/STAR-2.7.8a/source/STAR"); #recompile
 my $bamcoverage=find_program("/apps/anaconda3/bin/bamCoverage");
 my $samtools=find_program("/apps/samtools-1.12/bin/samtools");
-
-
-
 
 
 #######
@@ -238,6 +251,20 @@ my %tx2ref=(
 		"txanno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_tx_annocombo.txt"}
 );
 
+
+#decide how many threads used by cutadapt and STAR
+if(defined $ppn && length($ppn)>0) {
+	if($threads<$ppn) {
+		$threads=$ppn;
+	}
+}
+else {
+	if($threads<$ncpus) {
+		$threads=$ncpus;
+	}
+}
+	
+	
 
 ########
 #Process
@@ -427,7 +454,7 @@ if(defined $configattrs{"FASTQ2"}) {
 		#add poly-A/T trimming, used shorter -A adapter trimming
 		#$sample2workflow{$sample}.="$cutadapt -j 4 -m 20 --interleaved -a AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC -A AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT $fastq1 $fastq2 | $cutadapt --interleaved -j 4 -m 20 -a \"A{100}\" -A \"A{100}\" - | $cutadapt --interleaved -j 4 -m 20 -a \"T{100}\" -A \"T{100}\" - -o $fastq1trim -p $fastq2trim >> $cutadaptlog 2>&1;";
 		
-		$sample2workflow{$sample}.="$cutadapt -j 4 -m 20 --interleaved -a AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC -A AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT $fastq1 $fastq2 2>>$cutadaptlog | $cutadapt --interleaved -j 4 -m 20 -a \"A{100}\" -A \"A{100}\" - 2>>$cutadaptlog | $cutadapt --interleaved -j 4 -m 20 -a \"T{100}\" -A \"T{100}\" - -o $fastq1trim -p $fastq2trim 1>>$cutadaptlog;";
+		$sample2workflow{$sample}.="$cutadapt -j $threads -m 20 --interleaved -a AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC -A AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT $fastq1 $fastq2 2>>$cutadaptlog | $cutadapt --interleaved -j $threads -m 20 -a \"A{100}\" -A \"A{100}\" - 2>>$cutadaptlog | $cutadapt --interleaved -j $threads -m 20 -a \"T{100}\" -A \"T{100}\" - -o $fastq1trim -p $fastq2trim 1>>$cutadaptlog;";
 		
 		if($keepfastq eq "F") {
 			$tempfiles2rm{$sample}{$fastq1trim}++;
@@ -459,7 +486,7 @@ else {
 		#add poly-A/T trimming
 		#$sample2workflow{$sample}.="$cutadapt -j 4 -a AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC $fastq1 | $cutadapt -j 4 -a \"A{100}\" - | $cutadapt -j 4 -m 20 -a \"T{100}\" - -o $fastq1trim >> $cutadaptlog 2>&1;";
 		
-		$sample2workflow{$sample}.="$cutadapt -j 4 -a AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC $fastq1 2>>$cutadaptlog | $cutadapt -j 4 -a \"A{100}\" - 2>>$cutadaptlog | $cutadapt -j 4 -m 20 -a \"T{100}\" - -o $fastq1trim 1>>$cutadaptlog;";
+		$sample2workflow{$sample}.="$cutadapt -j $threads -a AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC $fastq1 2>>$cutadaptlog | $cutadapt -j $threads -a \"A{100}\" - 2>>$cutadaptlog | $cutadapt -j $threads -m 20 -a \"T{100}\" - -o $fastq1trim 1>>$cutadaptlog;";
 		
 		if($keepfastq eq "F") {
 			$tempfiles2rm{$sample}{$fastq1trim}++;
@@ -515,7 +542,7 @@ if(defined $configattrs{"FASTQ2"}) {
 		#$sample2workflow{$sample}.="$rsem -p 4 --output-genome-bam --sort-bam-by-coordinate --star-gzipped-read-file --star --paired-end ".$sample2fastq{$sample}[2]." ".$sample2fastq{$sample}[3]." ".$tx2ref{$tx}." $samplefolder/$sample > $rsemlog 2>&1;";
 		
 		#STAR alignment
-		$sample2workflow{$sample}.="$star --genomeDir ".$tx2ref{$tx}{"star"}."  --outSAMunmapped Within  --outReadsUnmapped Fastx --outFilterType BySJout  --outSAMattributes NH HI AS NM MD  --outFilterMultimapNmax 20  --outFilterMismatchNmax 999  --outFilterMismatchNoverLmax 0.04  --alignIntronMin 20  --alignIntronMax 1000000  --alignMatesGapMax 1000000  --alignSJoverhangMin 8  --alignSJDBoverhangMin 1  --sjdbScore 1  --runThreadN 4  --genomeLoad NoSharedMemory  --outSAMtype BAM SortedByCoordinate  --quantMode TranscriptomeSAM  --outSAMheaderHD \@HD VN:1.4 SO:coordinate  --outFileNamePrefix $samplefolder/$sample\_  --readFilesCommand zcat  --readFilesIn ".$sample2fastq{$sample}[2]." ".$sample2fastq{$sample}[3]." > $starlog 2>&1;";
+		$sample2workflow{$sample}.="$star --genomeDir ".$tx2ref{$tx}{"star"}."  --outSAMunmapped Within  --outReadsUnmapped Fastx --outFilterType BySJout  --outSAMattributes NH HI AS NM MD  --outFilterMultimapNmax 20  --outFilterMismatchNmax 999  --outFilterMismatchNoverLmax 0.04  --alignIntronMin 20  --alignIntronMax 1000000  --alignMatesGapMax 1000000  --alignSJoverhangMin 8  --alignSJDBoverhangMin 1  --sjdbScore 1  --runThreadN $threads  --genomeLoad NoSharedMemory  --outSAMtype BAM SortedByCoordinate  --quantMode TranscriptomeSAM  --outSAMheaderHD \@HD VN:1.4 SO:coordinate  --outFileNamePrefix $samplefolder/$sample\_  --readFilesCommand zcat  --readFilesIn ".$sample2fastq{$sample}[2]." ".$sample2fastq{$sample}[3]." > $starlog 2>&1;";
 		
 		$tempfiles2rm{$sample}{ "$samplefolder/$sample\_Aligned.toTranscriptome.out.bam"}++;
 		
@@ -523,12 +550,12 @@ if(defined $configattrs{"FASTQ2"}) {
 		$sample2workflow{$sample}.="$samtools index $samplefolder/$sample\_Aligned.sortedByCoord.out.bam;";
 		
 		#RSEM 
-		$sample2workflow{$sample}.="$rsem -p 4 --paired-end --bam $samplefolder/$sample\_Aligned.toTranscriptome.out.bam ".$tx2ref{$tx}{"rsem"}." $samplefolder/$sample > $rsemlog 2>&1;";
+		$sample2workflow{$sample}.="$rsem -p $threads --paired-end --bam $samplefolder/$sample\_Aligned.toTranscriptome.out.bam ".$tx2ref{$tx}{"rsem"}." $samplefolder/$sample > $rsemlog 2>&1;";
 		
 		$tempfiles2rm{$sample}{"$samplefolder/$sample.transcript.bam"}++;
 		
 		if($runbamcoverage eq "T") {
-			$sample2workflow{$sample}.="$bamcoverage --numberOfProcessors 4 --bam $samplefolder/$sample\_Aligned.sortedByCoord.out.bam --normalizeUsing CPM --binSize 5 -o $samplefolder/$sample\_Aligned.sortedByCoord.out.bw;";
+			$sample2workflow{$sample}.="$bamcoverage --numberOfProcessors $threads --bam $samplefolder/$sample\_Aligned.sortedByCoord.out.bam --normalizeUsing CPM --binSize 5 -o $samplefolder/$sample\_Aligned.sortedByCoord.out.bw;";
 		}
 	}
 }
@@ -546,7 +573,7 @@ else {
 		#$sample2workflow{$sample}.="$rsem -p 4 --output-genome-bam --sort-bam-by-coordinate --star-gzipped-read-file --star ".$sample2fastq{$sample}[1]." ".$tx2ref{$tx}." $samplefolder/$sample > $rsemlog 2>&1;";
 		
 		#STAR alignment
-		$sample2workflow{$sample}.="$star --genomeDir ".$tx2ref{$tx}{"star"}."  --outSAMunmapped Within  --outReadsUnmapped Fastx --outFilterType BySJout  --outSAMattributes NH HI AS NM MD  --outFilterMultimapNmax 20  --outFilterMismatchNmax 999  --outFilterMismatchNoverLmax 0.04  --alignIntronMin 20  --alignIntronMax 1000000  --alignMatesGapMax 1000000  --alignSJoverhangMin 8  --alignSJDBoverhangMin 1  --sjdbScore 1  --runThreadN 4  --genomeLoad NoSharedMemory  --outSAMtype BAM SortedByCoordinate  --quantMode TranscriptomeSAM  --outSAMheaderHD \@HD VN:1.4 SO:coordinate  --outFileNamePrefix $samplefolder/$sample\_  --readFilesCommand zcat  --readFilesIn ".$sample2fastq{$sample}[1]." > $starlog 2>&1;";
+		$sample2workflow{$sample}.="$star --genomeDir ".$tx2ref{$tx}{"star"}."  --outSAMunmapped Within  --outReadsUnmapped Fastx --outFilterType BySJout  --outSAMattributes NH HI AS NM MD  --outFilterMultimapNmax 20  --outFilterMismatchNmax 999  --outFilterMismatchNoverLmax 0.04  --alignIntronMin 20  --alignIntronMax 1000000  --alignMatesGapMax 1000000  --alignSJoverhangMin 8  --alignSJDBoverhangMin 1  --sjdbScore 1  --runThreadN $threads  --genomeLoad NoSharedMemory  --outSAMtype BAM SortedByCoordinate  --quantMode TranscriptomeSAM  --outSAMheaderHD \@HD VN:1.4 SO:coordinate  --outFileNamePrefix $samplefolder/$sample\_  --readFilesCommand zcat  --readFilesIn ".$sample2fastq{$sample}[1]." > $starlog 2>&1;";
 		
 		$tempfiles2rm{$sample}{ "$samplefolder/$sample\_Aligned.toTranscriptome.out.bam"}++;
 
@@ -554,12 +581,12 @@ else {
 		$sample2workflow{$sample}.="$samtools index $samplefolder/$sample\_Aligned.sortedByCoord.out.bam;";
 		
 		#RSEM process alignment
-		$sample2workflow{$sample}.="$rsem -p 4 --bam $samplefolder/$sample\_Aligned.toTranscriptome.out.bam ".$tx2ref{$tx}{"rsem"}." $samplefolder/$sample > $rsemlog 2>&1;";
+		$sample2workflow{$sample}.="$rsem -p $threads --bam $samplefolder/$sample\_Aligned.toTranscriptome.out.bam ".$tx2ref{$tx}{"rsem"}." $samplefolder/$sample > $rsemlog 2>&1;";
 		
 		$tempfiles2rm{$sample}{"$samplefolder/$sample.transcript.bam"}++;
 		
 		if($runbamcoverage eq "T") {
-			$sample2workflow{$sample}.="$bamcoverage --numberOfProcessors 4 --bam $samplefolder/$sample\_Aligned.sortedByCoord.out.bam --normalizeUsing CPM --binSize 5 -o $samplefolder/$sample\_Aligned.sortedByCoord.out.bw;";
+			$sample2workflow{$sample}.="$bamcoverage --numberOfProcessors $threads --bam $samplefolder/$sample\_Aligned.sortedByCoord.out.bam --normalizeUsing CPM --binSize 5 -o $samplefolder/$sample\_Aligned.sortedByCoord.out.bw;";
 		}
 	}
 }
@@ -578,6 +605,7 @@ foreach my $sample (sort keys %sample2workflow) {
 	
 	#rm temporary files
 	print S1 "rm ",join(" ",sort keys %{$tempfiles2rm{$sample}}),";\n";
+	#print S1 "\n";
 }
 
 close S1;

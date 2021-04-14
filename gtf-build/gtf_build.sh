@@ -106,7 +106,7 @@ perl ~/Pipeline/omictools/gtf-build/ensembl2ucsc_caller.pl -i Mus_musculus.GRCm3
 perl /home/centos/Pipeline/omictools/gtf-build/gtf2anno.pl -i /data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc.gtf -a /data/jyin/Databases/Genomes/Mouse/mm10/mart_export_v88_mouse.txt -o /data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_gene_annocombo.txt
  
 #Generate tx annotation
-perl /home/centos/Pipeline/omictools/gtf-build/tx_anno.pl -i Mus_musculus.GRCm38.88_ucsc_gene_annocombo.txt -a mart_export_v88_mouse_tx.txt -o  Mus_musculus.GRCm38.88_ucsc_tx_annocombo.txt
+perl /home/centos/Pipeline/omictools/gtf-build/tx_anno.pl -i /data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_gene_annocombo.txt -a /data/jyin/Databases/Genomes/Mouse/mm10/mart_export_v88_mouse_tx.txt -o  /data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_tx_annocombo.txt
  
  
 #gtf2bed 
