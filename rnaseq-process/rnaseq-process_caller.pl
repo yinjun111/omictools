@@ -12,7 +12,7 @@ use File::Basename qw(basename dirname);
 ########
 
 
-my $version="0.6";
+my $version="0.61";
 
 #0.2b change ensembl to UCSC format
 #0.2c add bw generation
@@ -28,7 +28,7 @@ my $version="0.6";
 #v0.54, option to keep fastq
 #v0.55, add --nodes/--ppn for Firefly
 #v0.6 change parameters, v88 and AWS
-
+#v0.61 remove fastq file after star
 
 my $usage="
 
@@ -544,6 +544,13 @@ if(defined $configattrs{"FASTQ2"}) {
 		#STAR alignment
 		$sample2workflow{$sample}.="$star --genomeDir ".$tx2ref{$tx}{"star"}."  --outSAMunmapped Within  --outReadsUnmapped Fastx --outFilterType BySJout  --outSAMattributes NH HI AS NM MD  --outFilterMultimapNmax 20  --outFilterMismatchNmax 999  --outFilterMismatchNoverLmax 0.04  --alignIntronMin 20  --alignIntronMax 1000000  --alignMatesGapMax 1000000  --alignSJoverhangMin 8  --alignSJDBoverhangMin 1  --sjdbScore 1  --runThreadN $threads  --genomeLoad NoSharedMemory  --outSAMtype BAM SortedByCoordinate  --quantMode TranscriptomeSAM  --outSAMheaderHD \@HD VN:1.4 SO:coordinate  --outFileNamePrefix $samplefolder/$sample\_  --readFilesCommand zcat  --readFilesIn ".$sample2fastq{$sample}[2]." ".$sample2fastq{$sample}[3]." > $starlog 2>&1;";
 		
+		#need to remove fastq to optimize disk usage
+		if($keepfastq eq "F") {
+			$sample2workflow{$sample}.="rm ".join(" ", sort keys %{$tempfiles2rm{$sample}}).";";			
+			$tempfiles2rm{$sample}={}; #clear the hash
+		}
+		
+		
 		$tempfiles2rm{$sample}{ "$samplefolder/$sample\_Aligned.toTranscriptome.out.bam"}++;
 		
 		#bam index
@@ -574,7 +581,13 @@ else {
 		
 		#STAR alignment
 		$sample2workflow{$sample}.="$star --genomeDir ".$tx2ref{$tx}{"star"}."  --outSAMunmapped Within  --outReadsUnmapped Fastx --outFilterType BySJout  --outSAMattributes NH HI AS NM MD  --outFilterMultimapNmax 20  --outFilterMismatchNmax 999  --outFilterMismatchNoverLmax 0.04  --alignIntronMin 20  --alignIntronMax 1000000  --alignMatesGapMax 1000000  --alignSJoverhangMin 8  --alignSJDBoverhangMin 1  --sjdbScore 1  --runThreadN $threads  --genomeLoad NoSharedMemory  --outSAMtype BAM SortedByCoordinate  --quantMode TranscriptomeSAM  --outSAMheaderHD \@HD VN:1.4 SO:coordinate  --outFileNamePrefix $samplefolder/$sample\_  --readFilesCommand zcat  --readFilesIn ".$sample2fastq{$sample}[1]." > $starlog 2>&1;";
-		
+
+		#need to remove fastq to optimize disk usage
+		if($keepfastq eq "F") {
+			$sample2workflow{$sample}.="rm ".join(" ", sort keys %{$tempfiles2rm{$sample}}).";";
+			$sample2workflow{$sample}={}; #clear the hash
+		}
+
 		$tempfiles2rm{$sample}{ "$samplefolder/$sample\_Aligned.toTranscriptome.out.bam"}++;
 
 		#bam index

@@ -1,4 +1,8 @@
 #update yum
+
+echo "Initiating master node for omictools.\n"
+date
+
 sudo yum -y update
 
 sudo yum -y install emacs git wget zip screen
@@ -17,12 +21,12 @@ mkdir /home/centos/Pipeline/
 sudo chown centos /home/centos/Pipeline/
 
 #create users
-#mkdir /data/users
+mkdir /data/users
 
-#for user in jyin qmeng yyue mparks yxu;do
-#	sudo useradd $user
-#	echo "$user,`id -u $user`" >> /data/users/userlistfile
-#done
+for user in jyin qmeng yyue mparks yxu;do
+	sudo useradd $user
+	echo "$user,`id -u $user`" >> /data/users/userlistfile
+done
 
 
 #####
@@ -52,7 +56,7 @@ cd /home/centos/Programs/parallel-20210322
 
 
 cd /home/centos/Pipeline/
-/usr/local/bin/aws s3 cp s3://ferring-omictools/omictools omictools/ --recursive
+/usr/local/bin/aws s3 sync s3://ferring-omictools/omictools omictools/
 chmod 755 -R /home/centos/Pipeline/omictools/
 
 cd omictools/
@@ -63,7 +67,7 @@ sudo ln -s /apps/omictools/omictools_caller.pl /usr/bin/omictools
 /usr/local/bin/aws s3 sync s3://ferring-omictools/Databases/ /data/jyin/Databases/ --delete
 
 #copy testdata
-mkdir /data/jyin/Pipeline_Test
+mkdir -p /data/jyin/Pipeline_Test
 sudo chown -R centos /data/jyin/Pipeline_Test
 /usr/local/bin/aws s3 sync s3://ferring-omictools/Testdata/ /data/jyin/Pipeline_Test/Testdata/
 
