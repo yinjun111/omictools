@@ -14,7 +14,7 @@ library(Cairo,quietly =T)
 #Version
 ####
 
-version="0.5"
+version="0.51"
 
 #0.2b, change auto filter to *5. Add indfilter and cookscutoff option
 #0.23, add write_table_proper
@@ -22,6 +22,8 @@ version="0.5"
 #0.31, add plotting option
 #0.4 add new volcano plot and gene annotation. --anno and --config are used. --anno is different from previous argument
 #0.41, changed title for Significance 
+#0.51, add xlim ylim for volcano
+
 
 description=paste0("de_test\nversion ",version,"\n","Usage:\nDescription: Differential Expression calculation using DESeq2\n")
 
@@ -212,7 +214,7 @@ volcano_plot_ggplot<-function(fc,q,sig,xlim=c(-7,7),ylim=c(0,30),xlab="Log2FC",y
 enhanced_volcano_plot <- function(gene, fc, q, sig, labels = NULL, 
                                   upcol = "red2", downcol = "blue2",
                                   xlab = "Log2FC", ylab = "-log10 P", main = "Volcano Plot", 
-                                  fc_cutoff = args$fccutoff, q_cutoff = args$q_cutof){
+                                  fc_cutoff = args$fccutoff, q_cutoff = args$q_cutof,xlim=c(-7,7),ylim=c(0,30)){
     
   
   # Create a data frame using gene names, fold changes, and q-values
@@ -264,6 +266,15 @@ enhanced_volcano_plot <- function(gene, fc, q, sig, labels = NULL,
     tmp.df <- tmp.df[order(tmp.df$fc),]
     labels <- c(rownames(tmp.df)[1:10], tail(rownames(tmp.df), n = 10))
   }
+  
+  #auto define xlim and ylim
+  if(max_pval<max(ylim)) {
+	ylim=c(0, max_pval)
+  }
+  
+  if(max_fc <max(xlim)) {
+	xlim=c(min_fc, max_fc)
+  }  
 
   # Render the volcano plot
   plt <- EnhancedVolcano(df, x = 'lfc', y = 'q', lab = df$gene_name,
@@ -275,7 +286,8 @@ enhanced_volcano_plot <- function(gene, fc, q, sig, labels = NULL,
                          colCustom = cols, legendPosition = "right",
                          pointSize = 2, cutoffLineWidth = 0.4,
                          labFace = "plain", subtitle = main,
-                         ylim = c(0, max_pval), xlim = c(min_fc, max_fc),
+                         #ylim = c(0, max_pval), xlim = c(min_fc, max_fc),
+						 ylim=ylim,xlim=xlim,
                          axisLabSize = 12, captionLabSize = 12, 
                          xlab = xlab, ylab = ylab, title = "", 
                          caption = paste0('Total = ', nrow(df), ' features'),

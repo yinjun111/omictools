@@ -131,10 +131,10 @@ mkdir /apps/perl5lib/
 
 echo "export PERL5LIB=/apps/perl5lib/lib/perl5" >> /home/centos/.bashrc;source /home/centos/.bashrc
 
-cpanm --local-lib=/apps/perl5lib/ List::Utils
-cpanm --local-lib=/apps/perl5lib/ File::Which
-cpanm --local-lib=/apps/perl5lib/ Digest::MD5
-cpanm --local-lib=/apps/perl5lib/ Excel::Writer::XLSX
+/usr/local/bin/cpanm --local-lib=/apps/perl5lib/ List::Utils
+/usr/local/bin/cpanm --local-lib=/apps/perl5lib/ File::Which
+/usr/local/bin/cpanm --local-lib=/apps/perl5lib/ Digest::MD5
+/usr/local/bin/cpanm --local-lib=/apps/perl5lib/ Excel::Writer::XLSX
 
 sudo chmod -R 755 /apps/perl5lib/
 
@@ -168,6 +168,7 @@ cd /apps/STAR-2.7.8a/source
 sudo make STAR
 
 #install samtools
+cd /home/centos/Programs
 wget https://github.com/samtools/samtools/releases/download/1.12/samtools-1.12.tar.bz2
 tar xjvf samtools-1.12.tar.bz2
 cd /home/centos/Programs/samtools-1.12
