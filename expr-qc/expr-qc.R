@@ -1,6 +1,8 @@
-version <- 0.21
+version <- 0.22
 
 #v0.21, add pdf for the plots
+#v0.22, change cols, add PCA 2&3
+
 
 # ---------------------
 # Required libraries
@@ -98,7 +100,7 @@ cat("\n\n")
 
 # Define colors for plots (up to 10 sample groups)
 #plot_cols <- c("#EA3323", "#0E2BF5", "#41ab5d", "#c994c7","#962219", 
-               "#A3FCFE", "#A1F96F", "#D373DA", "#ED712D", "#F4B86B")
+#               "#A3FCFE", "#A1F96F", "#D373DA", "#ED712D", "#F4B86B")
 #cols <- plot_cols[1:nlevels(Group)]
 
 cols<-rainbow(nlevels(Group))
