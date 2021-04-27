@@ -95,6 +95,10 @@ done
 
 if [ -f "$fastafile" ] || [ -f "$gtffile" ];then
 	logfile=$outfolder/gtf-build_run.log
+	
+	echo "gtf-build version $version running.\n" > $logfile
+	date >> $logfile
+	
 else
 	echo "ERROR:No input file was found."
 fi
