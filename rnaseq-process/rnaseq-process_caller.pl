@@ -392,7 +392,7 @@ close OUT;
 unless(defined $task && length($task)>0) {
 	if($runmode eq "cluster") {
 		my $samplenum=keys %sample2fastq;
-		print STDERR "$samplenum samples detected. Use $samplenum tasks in HPC.\n\n"
+		print STDERR "$samplenum samples detected. Use $samplenum tasks in HPC.\n\n";
 		$task=$samplenum;
 	}
 	else {
