@@ -97,9 +97,12 @@ cat(do.call(paste, c(as.list(levels(Group)), sep = ", ")))
 cat("\n\n")
 
 # Define colors for plots (up to 10 sample groups)
-plot_cols <- c("#EA3323", "#0E2BF5", "#41ab5d", "#c994c7","#962219", 
+#plot_cols <- c("#EA3323", "#0E2BF5", "#41ab5d", "#c994c7","#962219", 
                "#A3FCFE", "#A1F96F", "#D373DA", "#ED712D", "#F4B86B")
-cols <- plot_cols[1:nlevels(Group)]
+#cols <- plot_cols[1:nlevels(Group)]
+
+cols<-rainbow(nlevels(Group))
+
 
 # Convert to Log2 if TRUE
 if (opt$log2 == T) {
@@ -193,6 +196,25 @@ autoplot(expr.pca, x=1, y=3, data=pca.groups, colour="Group", size = 4, alpha = 
   theme_classic() + theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
   scale_color_manual(values = cols) 
 dev.off()
+
+
+# PC2 vs PC3
+cat("Creating PCA plot PC2 vs. PC3 with sample names ...\n")
+pca_plot23 <- paste0(opt$out,"/" , opt$pn, "_PCA-2&3-names.png")
+CairoPNG(filename = pca_plot23,res = 300,width=2500, height=2200)
+autoplot(expr.pca, x=2, y=3, data=pca.groups, colour="Group", label = TRUE, label.size = 4, shape=F) +
+  theme_classic() + theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
+  scale_color_manual(values = cols)
+dev.off()
+
+cat("Creating PCA plot PC2 vs. PC3 ...\n")
+pca_plot23 <- paste0(opt$out,"/" , opt$pn, "_PCA-2&3.png")
+CairoPNG(filename = pca_plot23,res = 300,width=2500, height=2200)
+autoplot(expr.pca, x=2, y=3, data=pca.groups, colour="Group", size = 4, alpha = 0.75) + 
+  theme_classic() + theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
+  scale_color_manual(values = cols) 
+dev.off()
+
 
 # ---------------------
 # Boxplots of genes
