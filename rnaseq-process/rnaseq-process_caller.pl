@@ -12,7 +12,7 @@ use File::Basename qw(basename dirname);
 ########
 
 
-my $version="0.61";
+my $version="0.62";
 
 #0.2b change ensembl to UCSC format
 #0.2c add bw generation
@@ -29,6 +29,8 @@ my $version="0.61";
 #v0.55, add --nodes/--ppn for Firefly
 #v0.6 change parameters, v88 and AWS
 #v0.61 remove fastq file after star
+#v0.62 change default number of tasks to number of samples
+
 
 my $usage="
 
@@ -63,7 +65,7 @@ Parameters:
 
     #Parameters for PBS
 
-    --task            Number of tasks to be paralleled. By default 4 tasks for local mode, 8 tasks for cluster mode.
+    --task            Number of tasks to be paralleled. By default 4 tasks for local mode. For cluster mode, it is the number of samples in configuration file.
 
     --mem|-m          Memory usage for each process, e.g. 100mb, 100gb [40gb]
 	
@@ -72,11 +74,11 @@ Parameters:
 	A) by specifying number of nodes and process
     --nodes           The value can be A) No. of nodes for each task
                                        B) Name of the node, e.g. n001.cluster.com                        
-    --ppn             No. of processes for each task	
+    --ppn             No. of processes for each task. By default [4]
 	
 	B) by specifying the total number of cpus (default)
     --ncpus           No. of cpus for each task for tasks can't use multiple nodes
-                           Default for rnaseq-process[4]
+                           Default for rnaseq-process
 						   
 
 								   
@@ -109,7 +111,7 @@ my $mem="40gb";
 my $runmode="none";
 my $task;
 my $ncpus=4;
-my $ppn;
+my $ppn=4;
 my $nodes;
 
 my $threads=4; #threads used by cutadapt and STAR
@@ -133,16 +135,6 @@ GetOptions(
 	"dev" => \$dev,		
 );
 
-
-#tasks, local 4, cluster 8
-unless(defined $task && length($task)>0) {
-	if($runmode eq "cluster") {
-		$task=8;
-	}
-	else {
-		$task=4;
-	}
-}
 
 
 
@@ -393,6 +385,20 @@ while(<IN>) {
 
 close IN;
 close OUT;
+
+
+
+#tasks, local 4, cluster by number of samples
+unless(defined $task && length($task)>0) {
+	if($runmode eq "cluster") {
+		my $samplenum=keys %sample2fastq;
+		print STDERR "$samplenum samples detected. Use $samplenum tasks in HPC.\n\n"
+		$task=$samplenum;
+	}
+	else {
+		$task=4;
+	}
+}
 
 
 #----------------

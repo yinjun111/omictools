@@ -6,7 +6,7 @@ version="1.0"
 
 #######
 #Usage
-#sh gtf_build.sh -g input.gtf -f genome.fasta -o outputfolder
+#sh gtf_build.sh -g input.gtf -f genome.fasta -o outputfolder -a mart_export_gene.txt -t mart_export_tx.txt -n Human.B38.Ensembl88 -s Human
 #######
 
 usage="
@@ -21,10 +21,14 @@ Description: Build indexes for genome annotations for omictools rnaseq and other
 
 Parameters:
 
-	-g      GTF file
-	-f      Fastq file	
-	-o      Output folder
+    -g      GTF file
+    -f      Fastq file	
+    -a      Gene annotation file
+    -t      Tx annotation file	
+    -o      Output folder
+
     -n      Name for the build
+    -s      Species Name
 	
 "
 
@@ -54,21 +58,30 @@ realpath() {
 
 
 #receive options
-while getopts "g:f:o:n:" opt; do
+while getopts "g:f:o:a:t:n:s:" opt; do
   case ${opt} in
     g )
 		gtffile=$(realpath $OPTARG)
-		gtffilename=$(basename $fastqfile)
+		gtffilename=$(basename $gtffile)
       ;;
     f )
 		fastafile=$(realpath $OPTARG)
-		fastafilename=$(basename fastafile)
+		fastafilename=$(basename $fastafile)
       ;;
-    o ) 
+    a )
+		geneannofile=$(realpath $OPTARG)
+      ;;
+    t )
+		txannofile=$(realpath $OPTARG)
+      ;;	  
+	o ) 
 		outfolder=$(realpath $OPTARG)
       ;;
     n ) 
 		buildname=$OPTARG
+      ;;
+    s ) 
+		species=$OPTARG
       ;;	  
     \? ) 
 		printf "ERROR: Unknown options.\n\n$usage"
@@ -87,27 +100,49 @@ else
 fi
 
 
+#programs to be used
+
+omictoolsfolder=/apps/omictools/
+ensembl2ucsc=$omictoolsfolder/gtf-build/ensembl2ucsc_caller.pl
+gtf2anno=$omictoolsfolder/gtf-build/gtf2anno.pl
+tx2anno=$omictoolsfolder/gtf-build/tx_anno.pl
+
+star=/apps/STAR-2.7.8a/bin/Linux_x86_64/STAR
+rsem=/apps/RSEM-1.3.3/rsem-prepare-reference
+
+
+
 #######
 #Input/Output
 #######
 
 #convert to UCSC format, by adding chr and removing non-primary chrs
-perl /apps/omictools/gtf-build/ensembl2ucsc_caller.pl -i Mus_musculus.GRCm38.88.gtf -o Mus_musculus.GRCm38.88_ucsc.gtf -t gtf
+printf "perl $ensembl2ucsc -i $gtffile -o $outfolder/${gtffilename/.gtf/_ucsc.gtf} -t gtf\n" | tee -a $logfile
+perl $ensembl2ucsc -i $gtffile -o $outfolder/${gtffilename/.gtf/_ucsc.gtf} -t gtf
 
-perl ~/Pipeline/omictools/gtf-build/ensembl2ucsc_caller.pl -i Mus_musculus.GRCm38.dna.primary_assembly.fa -o Mus_musculus.GRCm38.dna.primary_assembly_ucsc.fa -t fasta
+
+#convert genome fasta file
+printf "perl $ensembl2ucsc -i $fastafile -o $outfolder/${fastafilename/.fa/_ucsc.fa} -t fasta\n" | tee -a $logfile
+perl $ensembl2ucsc -i $fastafile -o $outfolder/${fastafilename/.fa/_ucsc.fa} -t fasta
+
 
 #Build STAR Index
- /apps/STAR-2.7.8a/bin/Linux_x86_64/STAR --runMode genomeGenerate --runThreadN 6 --genomeDir /data/jyin/Databases/Genomes/Mouse/Mouse.B38.Ensembl88_STAR/ --genomeFastaFiles /data/jyin/Databases/Genomes/Mouse/Mus_musculus.GRCm38.dna.primary_assembly_ucsc.fa  --sjdbGTFfile /data/jyin/Databases/Genomes/Mouse/Mus_musculus.GRCm38.88_ucsc.gtf
+printf "$star --runMode genomeGenerate --runThreadN 6 --genomeDir $outfolder/$buildname\_STAR/ --genomeFastaFiles $outfolder/${fastafilename/.fa/_ucsc.fa}  --sjdbGTFfile $outfolder/${gtffilename/.gtf/_ucsc.gtf} >> $logfile 2>&1\n" | tee -a $logfile
+$star --runMode genomeGenerate --runThreadN 4 --genomeDir $outfolder/$buildname\_STAR/ --genomeFastaFiles $outfolder/${fastafilename/.fa/_ucsc.fa} --sjdbGTFfile $outfolder/${gtffilename/.gtf/_ucsc.gtf} >> $logfile 2>&1
+
  
 #Build RSEM Index
- /apps/RSEM-1.3.3/rsem-prepare-reference --gtf /data/jyin/Databases/Genomes/Mouse/Mus_musculus.GRCm38.88_ucsc.gtf --star --star-path /apps/STAR-2.7.8a/bin/Linux_x86_64/ -p 6 /data/jyin/Databases/Genomes/Mouse/Mus_musculus.GRCm38.dna.primary_assembly_ucsc.fa /data/jyin/Databases/Genomes/Mouse/Mouse.B38.Ensembl88_STAR/Mouse_RSEM
- 
+printf "$rsem --gtf $outfolder/${gtffilename/.gtf/_ucsc.gtf} --star --star-path ${star/STAR/} -p 6 $outfolder/${fastafilename/.fa/_ucsc.fa} $outfolder/$buildname\_STAR/$species\_RSEM >> $logfile 2>&1\n" | tee -a $logfile
+$rsem --gtf $outfolder/${gtffilename/.gtf/_ucsc.gtf} --star --star-path ${star/STAR/} -p 4 $outfolder/${fastafilename/.fa/_ucsc.fa} $outfolder/$buildname\_STAR/$species\_RSEM >> $logfile 2>&1
+
+
 #Generate gene annotation
-perl /home/centos/Pipeline/omictools/gtf-build/gtf2anno.pl -i /data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc.gtf -a /data/jyin/Databases/Genomes/Mouse/mm10/mart_export_v88_mouse.txt -o /data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_gene_annocombo.txt
- 
+printf "$gtf2anno -i $outfolder/${gtffilename/.gtf/_ucsc.gtf} -a $geneannofile -o $outfolder/${gtffilename/.gtf/_ucsc_gene_annocombo.txt}\n" | tee -a $logfile
+perl $gtf2anno -i $outfolder/${gtffilename/.gtf/_ucsc.gtf} -a $geneannofile -o $outfolder/${gtffilename/.gtf/_ucsc_gene_annocombo.txt}
+
 #Generate tx annotation
-perl /home/centos/Pipeline/omictools/gtf-build/tx_anno.pl -i /data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_gene_annocombo.txt -a /data/jyin/Databases/Genomes/Mouse/mm10/mart_export_v88_mouse_tx.txt -o  /data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_tx_annocombo.txt
+printf "perl $tx2anno -i $outfolder/${gtffilename/.gtf/_ucsc_gene_annocombo.txt} -a $txannofile -o  $outfolder/${gtffilename/.gtf/_ucsc_tx_annocombo.txt} | tee -a $logfile\n" | tee -a $logfile
+perl $tx2anno -i $outfolder/${gtffilename/.gtf/_ucsc_gene_annocombo.txt} -a $txannofile -o  $outfolder/${gtffilename/.gtf/_ucsc_tx_annocombo.txt} 
  
- 
-#gtf2bed 
-awk '{ if ($0 ~ "transcript_id") print $0; else print $0" transcript_id \"\";"; }' Mus_musculus.GRCm38.88_ucsc.gtf | gtf2bed - > Mus_musculus.GRCm38.88_ucsc.bed
+#gtf2bed for RSeQC
+#awk '{ if ($0 ~ "transcript_id") print $0; else print $0" transcript_id \"\";"; }' Mus_musculus.GRCm38.88_ucsc.gtf | gtf2bed - > Mus_musculus.GRCm38.88_ucsc.bed

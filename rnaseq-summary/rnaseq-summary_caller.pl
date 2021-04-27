@@ -15,7 +15,7 @@ use List::Util qw(sum);
 ########
 
 
-my $version="0.7";
+my $version="0.71";
 
 #v0.1b, changed DE match pattern
 #v0.1c, add first line recognition in DE results
@@ -31,7 +31,7 @@ my $version="0.7";
 #v0.64, Rename duplicated folder names. Known issue, for DEs using different merging folders, GSEA doesn't work well
 #v0.65, add -m for --rnaseq-merge
 #v0.7, AWS and v88
-
+#v0.71, turn off GSEA as default
 
 my $usage="
 
@@ -69,9 +69,9 @@ Parameters:
                         Current support Human.B38.Ensembl88, Mouse.B38.Ensembl88
 
     --run_rnaseq-motif  Whether to run omictools rnaseq-motif, only generate script by default [none]
-                        use \"cluster\" to run in Firefly
+                        use \"cluster\" to run in HPC
 
-    --run_gsea-gen      Whether to run omictools gsea-gen, run by default [cluster]
+    --run_gsea-gen      Whether to run omictools gsea-gen, run by default [none]
                         use \"none\" to turn off
 
     --gseadbs           Default dbs to run are [h.all.v7.4,c5.bp.v7.4]
@@ -110,7 +110,7 @@ my $geneinput;
 my $txinput;
 my $gseadbs="h.all.v7.4,c5.go.bp.v7.4";
 my $runrnaseqmotif="none";
-my $rungseagen="cluster";
+my $rungseagen="none";
 my $verbose=1;
 my $jobs=5;
 my $tx;
