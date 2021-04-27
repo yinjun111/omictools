@@ -112,6 +112,7 @@ gtf2anno=$omictoolsfolder/gtf-build/gtf2anno.pl
 tx2anno=$omictoolsfolder/gtf-build/tx_anno.pl
 
 star=/apps/STAR-2.7.8a/bin/Linux_x86_64/STAR
+starfolder=/apps/STAR-2.7.8a/bin/Linux_x86_64/
 rsem=/apps/RSEM-1.3.3/rsem-prepare-reference
 
 
@@ -132,12 +133,12 @@ perl $ensembl2ucsc -i $fastafile -o $outfolder/${fastafilename/.fa/_ucsc.fa} -t 
 
 #Build STAR Index
 printf "$star --runMode genomeGenerate --runThreadN 6 --genomeDir $outfolder/$buildname\_STAR/ --genomeFastaFiles $outfolder/${fastafilename/.fa/_ucsc.fa}  --sjdbGTFfile $outfolder/${gtffilename/.gtf/_ucsc.gtf} >> $logfile 2>&1\n" | tee -a $logfile
-$star --runMode genomeGenerate --runThreadN 4 --genomeDir $outfolder/$buildname\_STAR/ --genomeFastaFiles $outfolder/${fastafilename/.fa/_ucsc.fa} --sjdbGTFfile $outfolder/${gtffilename/.gtf/_ucsc.gtf} >> $logfile 2>&1
+$star --runMode genomeGenerate --runThreadN 6 --genomeDir $outfolder/$buildname\_STAR/ --genomeFastaFiles $outfolder/${fastafilename/.fa/_ucsc.fa} --sjdbGTFfile $outfolder/${gtffilename/.gtf/_ucsc.gtf} >> $logfile 2>&1
 
  
 #Build RSEM Index
-printf "$rsem --gtf $outfolder/${gtffilename/.gtf/_ucsc.gtf} --star --star-path ${star/STAR/} -p 6 $outfolder/${fastafilename/.fa/_ucsc.fa} $outfolder/$buildname\_STAR/$species\_RSEM >> $logfile 2>&1\n" | tee -a $logfile
-$rsem --gtf $outfolder/${gtffilename/.gtf/_ucsc.gtf} --star --star-path ${star/STAR/} -p 4 $outfolder/${fastafilename/.fa/_ucsc.fa} $outfolder/$buildname\_STAR/$species\_RSEM >> $logfile 2>&1
+printf "$rsem --gtf $outfolder/${gtffilename/.gtf/_ucsc.gtf} --star --star-path $starfolder -p 6 $outfolder/${fastafilename/.fa/_ucsc.fa} $outfolder/$buildname\_STAR/$species\_RSEM >> $logfile 2>&1\n" | tee -a $logfile
+$rsem --gtf $outfolder/${gtffilename/.gtf/_ucsc.gtf} --star --star-path $starfolder -p 6 $outfolder/${fastafilename/.fa/_ucsc.fa} $outfolder/$buildname\_STAR/$species\_RSEM >> $logfile 2>&1
 
 
 #Generate gene annotation
