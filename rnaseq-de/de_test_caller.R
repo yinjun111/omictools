@@ -214,7 +214,7 @@ volcano_plot_ggplot<-function(fc,q,sig,xlim=c(-7,7),ylim=c(0,30),xlab="Log2FC",y
 enhanced_volcano_plot <- function(gene, fc, q, sig, labels = NULL, 
                                   upcol = "red2", downcol = "blue2",
                                   xlab = "Log2FC", ylab = "-log10 P", main = "Volcano Plot", 
-                                  fc_cutoff = args$fccutoff, q_cutoff = args$q_cutof,xlim=c(-7,7),ylim=c(0,30)){
+                                  fc_cutoff = args$fccutoff, q_cutoff = args$q_cutof,xlim=c(-10,10),ylim=c(0,30)){
     
   
   # Create a data frame using gene names, fold changes, and q-values
