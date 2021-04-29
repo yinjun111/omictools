@@ -4,7 +4,10 @@ use Getopt::Long;
 use File::Basename;
 use Cwd qw(abs_path);
 
-my $version="0.1";
+my $version="0.11";
+
+#v0.11, human & mouse annotation added
+
 
 my $usage="
 
