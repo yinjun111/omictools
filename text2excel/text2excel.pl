@@ -22,28 +22,17 @@ use Excel::Writer::XLSX;
 ########
 
 
-my $version="0.3";
-
-#v0.3 by Jun
-#supports wildcards. fix a bug for no --names 
-
+my $version="0.31";
 
 #v0.2 by Jun
 #add new theme to wrap text, filter and freeze panel
 #add log file and timestamp
 
+#v0.3 by Jun
+#supports wildcards. fix a bug for no --names 
 
-#v0.92 to be implemented, 
-#1) command line in linux (getopt/long included above & below)
-#2) accept multiple input text files into different tabs
-###    optional: input to name those tabs differently
-#3) Prevent automatic conversion (e.g. specify columns that should be txt and not general
-#Optional:  
-#####first row bold
-#####first row has filter function
-#####freeze the first row
-#####Color theme selection
-####example  $text2excel -i file1,file2,file3 -n name1,name2,name3 -o merged.xlsx
+#v0.31, tab name to 31 chars
+
 
 
 my $usage="
@@ -233,9 +222,9 @@ foreach my $R (keys @ins){   #index
 	if(exists($names[$R])){ $sname = $names[$R]; }
 	#print length($sname)."\n";
 	
-	#update: check length & adjust to 30 if too long.
+	#update: check length & adjust to 31 if too long.
 	my $len = length($sname);
-	if($len > 31){$sname = substr($sname,0,30);}
+	if($len >= 31){$sname = substr($sname,0,31);}
 	#print "\nUsing: ".$sname."\n";
 	$worksheets[$R] = $excel->add_worksheet($sname);
 	print "- - Created new sheet: ".$sname."\n";

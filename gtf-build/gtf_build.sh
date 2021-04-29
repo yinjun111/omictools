@@ -96,11 +96,11 @@ done
 if [ -f "$fastafile" ] || [ -f "$gtffile" ];then
 	logfile=$outfolder/gtf-build_run.log
 	
-	echo "gtf-build version $version running.\n" > $logfile
+	printf "gtf-build version $version running.\n" > $logfile
 	date >> $logfile
 	
 else
-	echo "ERROR:No input file was found."
+	printf "ERROR:No input file was found.\n"
 fi
 
 
@@ -153,5 +153,5 @@ perl $tx2anno -i $outfolder/${gtffilename/.gtf/_ucsc_gene_annocombo.txt} -a $txa
 #awk '{ if ($0 ~ "transcript_id") print $0; else print $0" transcript_id \"\";"; }' Mus_musculus.GRCm38.88_ucsc.gtf | gtf2bed - > Mus_musculus.GRCm38.88_ucsc.bed
 
 
-echo "gtf-build done.\n" >> $logfile
+printf "gtf-build done.\n" >> $logfile
 date >> $logfile
