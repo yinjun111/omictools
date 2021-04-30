@@ -591,7 +591,7 @@ else {
 		#need to remove fastq to optimize disk usage
 		if($keepfastq eq "F") {
 			$sample2workflow{$sample}.="rm ".join(" ", sort keys %{$tempfiles2rm{$sample}}).";";
-			$sample2workflow{$sample}={}; #clear the hash
+			$tempfiles2rm{$sample}={}; #clear the hash
 		}
 
 		$tempfiles2rm{$sample}{ "$samplefolder/$sample\_Aligned.toTranscriptome.out.bam"}++;

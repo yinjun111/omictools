@@ -299,9 +299,9 @@ enhanced_volcano_plot <- function(gene, fc, q, sig, labels = NULL,
   down <- as.character(table(cols)[col_scheme['Down']])
   up <- as.character(table(cols)[col_scheme['Up']])
   
-  plt <- plt + geom_text(x=min_fc, y=max_pval, label=down, 
+  plt <- plt + geom_text(x=min(xlim), y=max(ylim), label=down, 
                          col = col_scheme['Down'], size = 5)
-  plt <- plt + geom_text(x=max_fc, y=max_pval, label=up, 
+  plt <- plt + geom_text(x=max(xlim), y=max(ylim), label=up, 
                          col = col_scheme['Up'], size = 5)
   
   print(plt) #generate plot
@@ -474,6 +474,15 @@ if(args$plot) {
 	dev.off()
 
 	#MA plot, jpg
+
+	mp_outfile_png=sub("\\.\\w+$","_maplot.png",args$out,perl=T)
+
+	CairoPNG(filename = mp_outfile_png,res = 300,width=2500, height=2200)
+
+	ma_plot_ggplot(m=data.sel.result$result[,1],a=log2(data.sel.result$res[,1]),sig=data.sel.result$result[,5],ylab=paste("M:",colnames(data.sel.result$result)[1],sep=""),main=paste("MA Plot ","Significance: Log2FC ",round(args$fccutoff,2)," ",args$qmethod, "P ",args$qcutoff,sep=""),m_cutoff = args$fccutoff)
+	dev.off()
+	
+	
 	#mp_outfile_jpg=sub("\\.\\w+$","_maplot.jpg",args$out,perl=T)
 
 	#CairoJPEG(filename = mp_outfile_jpg,res = 300)
