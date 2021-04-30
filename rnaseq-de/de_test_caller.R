@@ -319,7 +319,7 @@ ma_plot_ggplot<-function(m,a,sig,xlim=c(1,30),ylim=c(-7,7),xlab="A:Log2 Mean of 
   a<-as.numeric(unlist(a))
   
   #define color  
-  cols <- c("Up" = "red", "Down" = "green","N.S."="grey")
+  cols <- c("Up" = "red", "Down" = "blue","N.S."="grey")
   shs <- c("21" = 21, "24" = 24)
   #define col and shape
   
@@ -355,7 +355,7 @@ ma_plot_ggplot<-function(m,a,sig,xlim=c(1,30),ylim=c(-7,7),xlab="A:Log2 Mean of 
   #plot
   vol <- ggplot(data, aes(x = a, y =m, fill = sig ,shape=factor(shape)))
   
-  vol + ggtitle(label = main) +
+  vol <-vol + ggtitle(label = main) +
     geom_point(size = 2, alpha = 1, na.rm = T, colour = "black") +
     scale_fill_manual(name="Color",values = cols) +
     scale_shape_manual(name="Shape",values = shs) +
@@ -370,8 +370,9 @@ ma_plot_ggplot<-function(m,a,sig,xlim=c(1,30),ylim=c(-7,7),xlab="A:Log2 Mean of 
     #geom_hline(yintercept = -log10(as.numeric(a_cutoff)), colour="#990000", linetype="dashed") + #p cutoff
     geom_hline(yintercept = as.numeric(m_cutoff), colour="#990000", linetype="dashed") + geom_hline(yintercept = -as.numeric(m_cutoff), colour="#990000", linetype="dashed") + # a cutoff line
     annotate("text",x=xlim[2]-0.5, y=ylim[2]-0.5, label=length(which(sig==1)),colour = "red",size = 5) + 
-    annotate("text",x=xlim[2]-0.5, y=ylim[1]+0.5, label=length(which(sig==-1)),colour = "green",size = 5) 
-  
+    annotate("text",x=xlim[2]-0.5, y=ylim[1]+0.5, label=length(which(sig==-1)),colour = "blue",size = 5) 
+	
+	print(vol) #generate plot 
 }
 
 write_table_proper<-function(file,data,name="Gene") {
@@ -448,7 +449,9 @@ if(args$plot) {
 	
 	
 	pdf(vp_outfile2_pdf,width=7, height=6)
+
 	enhanced_volcano_plot(gene=anno.sel,fc=data.sel.result$result[,1],q=data.sel.result$result[,4],sig=data.sel.result$result[,5],xlab=colnames(data.sel.result$result)[1],ylab=paste("-Log10 ",colnames(data.sel.result$result)[4],sep=""),main=paste("Volcano Plot ","Significance: Log2FC ",round(args$fccutoff,2)," ",args$qmethod, "P ",args$qcutoff,sep=""),q_cutoff=args$qcutoff,fc_cutoff = args$fccutoff,upcol="red2",downcol="green2")
+
 	dev.off()
 
 
@@ -470,7 +473,9 @@ if(args$plot) {
 	mp_outfile_pdf=sub("\\.\\w+$","_maplot.pdf",args$out,perl=T)
 
 	pdf(mp_outfile_pdf,width=7, height=6)
+
 	ma_plot_ggplot(m=data.sel.result$result[,1],a=log2(data.sel.result$res[,1]),sig=data.sel.result$result[,5],ylab=paste("M:",colnames(data.sel.result$result)[1],sep=""),main=paste("MA Plot ","Significance: Log2FC ",round(args$fccutoff,2)," ",args$qmethod, "P ",args$qcutoff,sep=""),m_cutoff = args$fccutoff)
+
 	dev.off()
 
 	#MA plot, jpg
@@ -480,6 +485,7 @@ if(args$plot) {
 	CairoPNG(filename = mp_outfile_png,res = 300,width=2500, height=2200)
 
 	ma_plot_ggplot(m=data.sel.result$result[,1],a=log2(data.sel.result$res[,1]),sig=data.sel.result$result[,5],ylab=paste("M:",colnames(data.sel.result$result)[1],sep=""),main=paste("MA Plot ","Significance: Log2FC ",round(args$fccutoff,2)," ",args$qmethod, "P ",args$qcutoff,sep=""),m_cutoff = args$fccutoff)
+
 	dev.off()
 	
 	
