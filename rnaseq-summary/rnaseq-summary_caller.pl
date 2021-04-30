@@ -15,7 +15,7 @@ use List::Util qw(sum);
 ########
 
 
-my $version="0.71";
+my $version="0.72";
 
 #v0.1b, changed DE match pattern
 #v0.1c, add first line recognition in DE results
@@ -32,6 +32,7 @@ my $version="0.71";
 #v0.65, add -m for --rnaseq-merge
 #v0.7, AWS and v88
 #v0.71, turn off GSEA as default
+#v0.72, add --comparisons
 
 my $usage="
 
@@ -52,6 +53,9 @@ Parameters:
 
     --in|-i           Input rnaseq-de folder(s)
     --output|-o       Output folder
+
+    --comparisons     (Optional) Name of comparisons to be included in the summary
+                            By default, all the comparisons in the rnaseq-de folder(s)
 
     --config|-c       Configuration file match the samples in the rnaseq-merge folder
                            first column as sample name.
@@ -101,6 +105,7 @@ my $params=join(" ",@ARGV);
 my $samples;
 my $inputfolders;
 my $outputfolder;
+my $comparisons;
 my $configfile;
 my $group;
 my $rnaseqmerge;
@@ -121,6 +126,7 @@ my $dev=0; #developmental version
 GetOptions(
 	"in|i=s" => \$inputfolders,
 	"output|o=s" => \$outputfolder,
+	"comparisons=s" => \$comparisons,	
 	"config|c=s" => \$configfile,
 
 	"group|g=s" => \$group,
@@ -294,6 +300,12 @@ my %report_cutoffs=(
 print STDERR "\nomictools rnaseq-summary $version running ...\n\n" if $verbose;
 print LOG "\nomictools rnaseq-summary $version running ...\n\n";
 
+#pre-selected comparisons
+my %selcomparisons;
+if(defined $comparisons && length($comparisons)>0) { 
+	%selcomparisons=map {$_,1} split(",",$comparisons);
+}
+
 #open input folders to find comparisons
 
 my %folder2genede;
@@ -312,6 +324,14 @@ foreach my $inputfolder (split(",",$inputfolders)) {
 			if(-e "$folder/gene_de_test_run.log") {
 				#rnaseq-de folder
 				my $foldername=basename($folder);
+				
+				if(keys %selcomparisons) {
+					unless (defined $selcomparisons{$foldername}) {
+						print STDERR $foldername," not defined by --comparisons. Skip...\n";
+						print LOG $foldername," not defined by --comparisons. Skip...\n";
+						next;
+					}
+				}								
 				
 				#foldername needs to be unique
 				if(defined $folder2dir{$foldername}) {
