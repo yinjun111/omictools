@@ -15,7 +15,7 @@ use List::Util qw(sum);
 ########
 
 
-my $version="0.72";
+my $version="0.73";
 
 #v0.1b, changed DE match pattern
 #v0.1c, add first line recognition in DE results
@@ -33,6 +33,7 @@ my $version="0.72";
 #v0.7, AWS and v88
 #v0.71, turn off GSEA as default
 #v0.72, add --comparisons
+#v0.73, keep --comparisons order. Foldername renamed for multiple inputfolders
 
 my $usage="
 
@@ -55,6 +56,7 @@ Parameters:
     --output|-o       Output folder
 
     --comparisons     (Optional) Name of comparisons to be included in the summary
+                            The order of comparison names are kept in output.
                             By default, all the comparisons in the rnaseq-de folder(s)
 
     --config|-c       Configuration file match the samples in the rnaseq-merge folder
@@ -301,9 +303,12 @@ print STDERR "\nomictools rnaseq-summary $version running ...\n\n" if $verbose;
 print LOG "\nomictools rnaseq-summary $version running ...\n\n";
 
 #pre-selected comparisons
-my %selcomparisons;
+my @selcomparisons;
+my %selcomparisons_hash;
 if(defined $comparisons && length($comparisons)>0) { 
-	%selcomparisons=map {$_,1} split(",",$comparisons);
+	#keep original order
+	@selcomparisons=split(",",$comparisons);
+	%selcomparisons_hash=map {$_,1} @selcomparisons;
 }
 
 #open input folders to find comparisons
@@ -323,10 +328,20 @@ foreach my $inputfolder (split(",",$inputfolders)) {
 			#this signature file is changed in v0.6
 			if(-e "$folder/gene_de_test_run.log") {
 				#rnaseq-de folder
-				my $foldername=basename($folder);
+				my $foldername;
 				
-				if(keys %selcomparisons) {
-					unless (defined $selcomparisons{$foldername}) {
+				#use different names for multiple inputfolders
+				if($inputfolders=~/,/) {				
+					my @dirs=split("\/",abs_path($folder));
+					$foldername= $dirs[$#dirs-1]."-".$dirs[$#dirs];
+				}
+				else {
+					$foldername=basename($folder);
+				}
+				
+				
+				if(@selcomparisons) {
+					unless (defined $selcomparisons_hash{$foldername}) {
 						print STDERR $foldername," not defined by --comparisons. Skip...\n";
 						print LOG $foldername," not defined by --comparisons. Skip...\n";
 						next;
@@ -338,16 +353,19 @@ foreach my $inputfolder (split(",",$inputfolders)) {
 					print STDERR "ERROR:$foldername has been used twice:\n",abs_path($folder),"\n",$folder2dir{$foldername},"\n";
 					print LOG "ERROR:$foldername has been used twice:\n",abs_path($folder),"\n",$folder2dir{$foldername},"\n";
 					
-					#rename folder name for duplicated foldernames
-					my @dirs=split("\/",abs_path($folder));
+				#	#rename folder name for duplicated foldernames
+				#	my @dirs=split("\/",abs_path($folder));
 					
-					my $newfoldername= $dirs[$#dirs-1]."-".$dirs[$#dirs];
+				#	my $newfoldername= $dirs[$#dirs-1]."-".$dirs[$#dirs];
+					
+					#push new comparison name to selected comparisons
+					#push @selcomparisons,$newfoldername;
 
-					print STDERR "Rename $foldername into $newfoldername.\n";
-					print LOG "Rename $foldername into $newfoldername.\n";
+				#	print STDERR "Rename $foldername into $newfoldername.\n";
+				#	print LOG "Rename $foldername into $newfoldername.\n";
 					
-					$foldername=$newfoldername;
-					#exit;
+				#	$foldername=$newfoldername;
+					exit;
 				}
 
 				#$comparisons{$foldername}++;  #if the folder name is changed, the comparisons wont be recognized by GSEA
@@ -369,9 +387,27 @@ foreach my $inputfolder (split(",",$inputfolders)) {
 	}
 }
 
+#double check comparison names
+my @usedcomparisons;
+
+if(@selcomparisons) {
+	foreach my $comp (@selcomparisons) {
+		unless(defined $folder2genede{$comp}) {
+			print STDERR "ERROR:$comp was not found in --in $inputfolders.\n";
+			print LOG "ERROR:$comp was not found in --in $inputfolders.\n";
+			exit;
+		}
+	}
+	@usedcomparisons=@selcomparisons;
+}
+else {
+	@usedcomparisons=sort keys %folder2genede;
+}
+
+
 #error message
 
-if(keys %folder2genede ==0) {
+if(@usedcomparisons ==0) {
 	print STDERR "\nERROR:No rnaseq-de folder was detected in $inputfolders\n\n";
 	print LOG "\nERROR:No rnaseq-de folder was detected in $inputfolders\n\n";
 	exit;
@@ -384,14 +420,16 @@ print STDERR "Printing files identified from input folder(s).\n\n" if $verbose;
 print LOG "Printing files identified from input folder(s).\n\n";
 
 
-foreach my $folder (sort keys %folder2genede) {
+foreach my $folder (@usedcomparisons) {
 	print STDERR $folder,"\t",$folder2genede{$folder},"\n" if $verbose;
 	print LOG $folder,"\t",$folder2genede{$folder},"\n";
 }
 
-foreach my $folder (sort keys %folder2txde) {
-	print STDERR $folder,"\t",$folder2txde{$folder},"\n" if $verbose;
-	print LOG $folder,"\t",$folder2txde{$folder},"\n";
+foreach my $folder (@usedcomparisons) {
+	if(defined $folder2txde{$folder}) {
+		print STDERR $folder,"\t",$folder2txde{$folder},"\n" if $verbose;
+		print LOG $folder,"\t",$folder2txde{$folder},"\n";
+	}
 }
 
 #####
@@ -489,7 +527,7 @@ my %folder2genetitle;
 
 my %cutoff_summary;
 
-foreach my $folder (sort keys %folder2genede) {
+foreach my $folder (@usedcomparisons) {
 
 	print STDERR "Processing ",$folder2dir{$folder}."/".$folder2genede{$folder},"\n" if $verbose;
 	print LOG "Processing ",$folder2dir{$folder}."/".$folder2genede{$folder},"\n";
@@ -572,7 +610,7 @@ foreach my $cutoff (sort keys %report_cutoffs,"current") {
 	my $cutoffsumfile="$outputfolder/rnaseq-summary_GeneDESigs_summary_$cutoff.txt";
 	open(OUT,">$cutoffsumfile") || die $!;
 	print OUT "Comparisons_$cutoff\tNo. of Up-Regulated Genes\tNo. of Down-Regulated Genes\n";
-	foreach my $folder (sort keys %folder2genede) {
+	foreach my $folder (@usedcomparisons) {
 		print OUT $folder,"\t";
 		if(defined $cutoff_summary{$cutoff}{$folder}{1}) {
 			print OUT $cutoff_summary{$cutoff}{$folder}{1},"\t";
@@ -600,13 +638,13 @@ close OUT;
 
 #print OUT sig file
 open(OUT,">$outputfolder/rnaseq-summary_GeneDESigs.txt") || die $!;
-print OUT "Gene\t",join("\t",sort keys %folder2genede) ,"\n";
+print OUT "Gene\t",join("\t",@usedcomparisons) ,"\n";
 
 foreach my $gene (sort keys %genes) {
 	print OUT $gene,"\t";
 	my @marks;
 	
-	foreach my $folder (sort keys %folder2genede) {
+	foreach my $folder (@usedcomparisons) {
 		if(defined $folder2genesig{$folder}{$gene}) {
 			push @marks,$folder2genesig{$folder}{$gene};
 		}
@@ -622,7 +660,7 @@ close OUT;
 
 #reformat gene de
 my @defiles;
-foreach my $folder (sort keys %folder2genede) {
+foreach my $folder (@usedcomparisons) {
 	
 	push @defiles,"$outputfolder/$folder\_GeneDEreformated.txt";
 	open(OUT,">$outputfolder/$folder\_GeneDEreformated.txt") || die $!;
@@ -751,7 +789,7 @@ my @gseascripts;
 #foreach my $comparison (sort keys %comparisons) {
 
 #if the DEs are from different mergred folders, the following commands won't work
-foreach my $foldername (sort keys %folder2comparison) {
+foreach my $foldername (@usedcomparisons) {
 	my $comparison=$folder2comparison{$foldername};
 	if($comparison=~/(.+)_vs_(.+)/) {
 		print STDERR "Comparison:$comparison recognized. Perform GSEA analysis.\n";
@@ -814,7 +852,7 @@ print STDERR "Generate files for rnaseq-motif analysis.\n" if $verbose;
 print LOG "Generate files for rnaseq-motif analysis.\n";
 
 
-foreach my $folder (sort keys %folder2genede) {
+foreach my $folder (@usedcomparisons) {
 	#use new de file
 	my $rnaseqmotifcmd="$rnaseq_motif --ge $outputfolder/$folder\_GeneDEreformated.txt --promoter longesttx -o $outputfolder/for_rnaseq-motif/$folder --tx $tx -v";
 

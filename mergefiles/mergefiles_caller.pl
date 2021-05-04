@@ -27,7 +27,7 @@ my $usage="
 
 mergefiles
 version: $version
-Usage: sbptools mergefiles -m model.txt -i file1.txt,file2.txt,file3.txt -o result.txt
+Usage: omictools mergefiles -m model.txt -i file1.txt,file2.txt,file3.txt -o result.txt
 
 Description: use a model file to merge all the files together. default case insensitive, and files have title
 
@@ -112,8 +112,8 @@ print LOG "\n";
 #Process
 ########
 
-print STDERR "\nsbptools mergefiles $version\n\n";
-print LOG "\nsbptools mergefiles $version running ...\n\n";
+print STDERR "\nomictools mergefiles $version\n\n";
+print LOG "\nomictools mergefiles $version running ...\n\n";
 
 #read model file
 

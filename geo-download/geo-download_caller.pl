@@ -4,15 +4,10 @@ use strict;
 use Getopt::Long;
 use Cwd qw(abs_path);
 use File::Basename qw(basename);
+use Text::CSV;
 
 #CutAdapt+FASTQC+RSEM+STAR
 
-
-########
-#Prerequisites
-########
-
-#none
 
 
 ########
@@ -20,24 +15,23 @@ use File::Basename qw(basename);
 ########
 
 
-my $version="0.2";
+my $version="0.3";
 
 #v0.2, Fastq files for PE
-
+#v0.3, change to fasterq-dump
 
 my $usage="
 
 geo-download
 version: $version
-Usage: sbptools geo-download --sra SraRunTable.txt --geo GSE78220_series_matrix.txt --seq PE -o ./
+Usage: omictools geo-download --sra SraRunTable.txt --geo GSE78220_series_matrix.txt --seq PE -o ./
 
-Description: Download GEO SRA fastq files. To learn how to use this tool, you can visit the Wiki page:
-             http://fox.burnham.org/index.php/Geo-download
+Description: Download GEO SRA fastq files.
 
 Parameters:
 
-    --sra             SRA file, SraRunTable.txt (tsv). SRA should be manually checked and corrected for annotations.
-    --geo             GEO series matrix file
+    --sra             SRA file, SraRunTable.txt (csv). SRA should be manually checked and corrected for annotations.
+    --geo             GEO series matrix file(s), separate by \",\"
     --seq             SE or PE [SE]
     --out|-o          output folder
 
@@ -75,6 +69,19 @@ GetOptions(
 	"verbose|v" => \$verbose,
 );
 
+
+########
+#Prerequisites
+########
+
+my $fasterq_dump="/apps/sratoolkit.2.11.0-centos_linux64/bin/fasterq-dump";
+my $fastq_dump="/apps/sratoolkit.2.11.0-centos_linux64/bin/fastq-dump";
+
+
+########
+#I/O
+########
+
 $outputfolder=abs_path($outputfolder);
 
 unless(-e $outputfolder) {
@@ -99,8 +106,8 @@ print LOG "\n";
 #Process
 ########
 
-print STDERR "\nsbptools geo-download $version\n\n";
-print LOG "\nsbptools geo-download $version running ...\n\n";
+print STDERR "\nomictools geo-download $version\n\n";
+print LOG "\nomictools geo-download $version running ...\n\n";
 
 
 #SRA file, read GSM ID
@@ -113,23 +120,33 @@ my %gsm2sra; #gsm may have multiple sras
 
 open(IN,$srafile) || die "ERROR:Can't read $srafile.\n\n";
 
+my $csv=Text::CSV->new({ sep_char => ',' });
+
 while(<IN>) {
 	tr/\r\n//d;
-	my @array=split/\t/;
 	
-	if($_=~/^Run/) {
+	if($csv->parse($_)) {
+		my @array=$csv->fields();
+	
+	#my @array=split/\t/;
+	
+		if($_=~/^Run/) {
+				
+			for(my $num=0;$num<@array;$num++) {
+				$title2col{$array[$num]}=$num;
+			}
 			
-		for(my $num=0;$num<@array;$num++) {
-			$title2col{$array[$num]}=$num;
+			$sratitle=$_;
+			
 		}
-		
-		$sratitle=$_;
-		
+		else {
+			$sra2gsm{$array[0]}=$array[$title2col{"GEO_Accession (exp)"}];
+			$sra2info{$array[0]}=[@array];
+			$gsm2sra{$array[$title2col{"GEO_Accession (exp)"}]}{$array[0]}++; #One GSM ID may contain multiple SRAs
+		}
 	}
 	else {
-		$sra2gsm{$array[0]}=$array[$title2col{"GEO_Accession (exp)"}];
-		$sra2info{$array[0]}=[@array];
-		$gsm2sra{$array[$title2col{"GEO_Accession (exp)"}]}{$array[0]}++; #One GSM ID may contain multiple SRAs
+		warn "Line could not be parsed: $_\n";
 	}
 }
 close IN;
@@ -147,23 +164,24 @@ my %gsm2title;
 my @geotitles;
 my @geogsms;
 
-open(IN,$geofile) || die "ERROR:Can't read $geofile.\n\n";
+foreach my $gfile (split(",",$geofile)) {
+	open(IN,$gfile) || die "ERROR:Can't read $gfile.\n\n";
 
-while(<IN>) {
-	tr/\r\n\"//d;
-	my @array=split/\t/;
-	
-	if($_=~/^\!Sample_title/) {
-		@geotitles=@array[1..$#array];	
+	while(<IN>) {
+		tr/\r\n\"//d;
+		my @array=split/\t/;
+		
+		if($_=~/^\!Sample_title/) {
+			push @geotitles, @array[1..$#array];	
+		}
+
+		if($_=~/^\!Sample_geo_accession/) {
+			push @geogsms, @array[1..$#array];	
+		}
 	}
-
-	if($_=~/^\!Sample_geo_accession/) {
-		@geogsms=@array[1..$#array];	
-	}
-
-
+	close IN;
 }
-close IN;
+
 
 my %knowngsms;
 for(my $num=0;$num<@geotitles;$num++) {
@@ -187,11 +205,11 @@ open(OUT,">$outputfolder/sra_download.sh") || die $!;
 
 foreach my $sra (sort keys %sra2gsm) {
 	if(defined $gsm2title{$sra2gsm{$sra}}) {
-		print OUT "fastq-dump --gzip -F --split-3 $sra -O $outputfolder\n";
-		
+		#print OUT "fastq-dump --gzip -F --split-3 $sra -O $outputfolder\n";
+		print OUT "$fasterq_dump $sra -O $outputfolder;gzip $outputfolder/$sra*;\n";	
 	}
 	else {
-		print STDERR "ERROR:$sra not defined.\n";
+		print STDERR "ERROR:$sra2gsm{$sra} not defined.\n";
 	}
 }
 
@@ -216,11 +234,21 @@ foreach my $gsm (sort keys %gsm2sra) {
 	}
 	
 	if($seq eq "SE") {
-		print OUT "cat ",join(" ",@srafiles)," > $outputfolder/$gsm\_merged.fastq.gz\n";
+		if(@srafiles==1) {
+			print OUT "mv ",join(" ",@srafiles)," $outputfolder/$gsm\_merged.fastq.gz\n";			
+		} else {
+			print OUT "cat ",join(" ",@srafiles)," > $outputfolder/$gsm\_merged.fastq.gz\n";
+		}
 	}
 	else {
-		print OUT "cat ",join(" ",@srafiles)," > $outputfolder/$gsm\_merged_1.fastq.gz\n";
-		print OUT "cat ",join(" ",@srafiles_rev)," > $outputfolder/$gsm\_merged_2.fastq.gz\n";
+		if(@srafiles==1) {
+			print OUT "mv ",join(" ",@srafiles)," $outputfolder/$gsm\_merged_1.fastq.gz\n";
+			print OUT "mv ",join(" ",@srafiles_rev)," $outputfolder/$gsm\_merged_2.fastq.gz\n";
+		}
+		else {	
+			print OUT "cat ",join(" ",@srafiles)," > $outputfolder/$gsm\_merged_1.fastq.gz\n";
+			print OUT "cat ",join(" ",@srafiles_rev)," > $outputfolder/$gsm\_merged_2.fastq.gz\n";
+		}
 	}
 }
 close OUT;

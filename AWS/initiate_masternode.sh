@@ -54,7 +54,7 @@ cd /home/centos/Programs/parallel-20210322
 #Omictools
 ########
 
-
+#copy omicools
 cd /home/centos/Pipeline/
 /usr/local/bin/aws s3 sync s3://ferring-omictools/omictools omictools/
 chmod 755 -R /home/centos/Pipeline/omictools/
@@ -62,6 +62,15 @@ chmod 755 -R /home/centos/Pipeline/omictools/
 cd omictools/
 sh cp_scripts.sh
 sudo ln -s /apps/omictools/omictools_caller.pl /usr/bin/omictools
+
+#copy gstool
+cd /home/centos/Pipeline/
+/usr/local/bin/aws s3 sync s3://ferring-omictools/gstools gstools/
+chmod 755 -R /home/centos/Pipeline/gstools/
+
+cd gstools/
+sh cp_scripts.sh
+sudo ln -s /apps/gstools/gstools_caller.pl /usr/bin/gstools
 
 #copy database
 /usr/local/bin/aws s3 sync s3://ferring-omictools/Databases/ /data/jyin/Databases/ --delete
@@ -135,6 +144,7 @@ echo "export PERL5LIB=/apps/perl5lib/lib/perl5" >> /home/centos/.bashrc;source /
 /usr/local/bin/cpanm --local-lib=/apps/perl5lib/ File::Which
 /usr/local/bin/cpanm --local-lib=/apps/perl5lib/ Digest::MD5
 /usr/local/bin/cpanm --local-lib=/apps/perl5lib/ Excel::Writer::XLSX
+/usr/local/bin/cpanm --local-lib=/apps/perl5lib/ Text::CSV
 
 sudo chmod -R 755 /apps/perl5lib/
 
@@ -187,6 +197,15 @@ cd /home/centos/Programs
 wget https://data.broadinstitute.org/gsea-msigdb/gsea/software/desktop/4.0/GSEA_Linux_4.0.3.zip
 unzip GSEA_Linux_4.0.3.zip
 sudo cp -R GSEA_Linux_4.0.3 /apps/
+
+#sratools
+cd /home/centos/Programs
+wget  https://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/2.11.0/sratoolkit.2.11.0-centos_linux64.tar.gz
+
+tar xzvf sratoolkit.2.11.0-centos_linux64.tar.gz
+
+sudo cp -R sratoolkit.2.11.0-centos_linux64/ /apps/
+
 
 #######
 #chown for some folders
