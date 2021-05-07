@@ -5,10 +5,6 @@ use Cwd qw(abs_path);
 use File::Basename qw(basename dirname);
 use List::Util qw(sum);
 
-#CutAdapt+FASTQC+RSEM+STAR
-
-
-
 
 ########
 #Interface
