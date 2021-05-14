@@ -11,7 +11,7 @@ use List::Util qw(sum);
 ########
 
 
-my $version="0.73";
+my $version="0.74";
 
 #v0.1b, changed DE match pattern
 #v0.1c, add first line recognition in DE results
@@ -720,8 +720,8 @@ foreach my $file ("gene.results.merged.fpkm.txt","gene.results.merged.tpm.txt") 
 					push @groupnames,$sample2group{$sample};
 				}
 				else {
-					print STDERR "ERROR:$sample not defined in $configfile.\n";
-					print LOG "ERROR:$sample not defined in $configfile.\n";
+					print STDERR "ERROR:$sample from $rnaseqmerge/$file is not defined in $configfile.\n";
+					print LOG "ERROR:$sample from $rnaseqmerge/$file is not defined in $configfile.\n";
 					exit;
 				}				
 			}
