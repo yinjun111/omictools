@@ -30,6 +30,8 @@ my $version="0.73";
 #v0.71, turn off GSEA as default
 #v0.72, add --comparisons
 #v0.73, keep --comparisons order. Foldername renamed for multiple inputfolders
+#v0.74, fix wrong merge folder not sample bug
+
 
 my $usage="
 
@@ -713,7 +715,15 @@ foreach my $file ("gene.results.merged.fpkm.txt","gene.results.merged.tpm.txt") 
 		if($_=~/^Gene\t/) {
 			#first line
 			foreach my $sample (@array[1..$#array]) {
-				push @groupnames,$sample2group{$sample};
+			
+				if(defined $sample2group{$sample}) {
+					push @groupnames,$sample2group{$sample};
+				}
+				else {
+					print STDERR "ERROR:$sample not defined in $configfile.\n";
+					print LOG "ERROR:$sample not defined in $configfile.\n";
+					exit;
+				}				
 			}
 			
 			print OUT1 "Gene\t",join("\t",sort(uniq(@groupnames))),"\n";
