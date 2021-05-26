@@ -1,8 +1,8 @@
-version <- 0.22
+version <- 0.3
 
 #v0.21, add pdf for the plots
 #v0.22, change cols, add PCA 2&3
-
+#v0.3, add eclipse for PCA
 
 # ---------------------
 # Required libraries
@@ -98,12 +98,26 @@ cat("Following groups found:\n")
 cat(do.call(paste, c(as.list(levels(Group)), sep = ", ")))
 cat("\n\n")
 
+
+# ---------------------
+# Color selection
+# ---------------------
+
+#old color selections
 # Define colors for plots (up to 10 sample groups)
 #plot_cols <- c("#EA3323", "#0E2BF5", "#41ab5d", "#c994c7","#962219", 
 #               "#A3FCFE", "#A1F96F", "#D373DA", "#ED712D", "#F4B86B")
 #cols <- plot_cols[1:nlevels(Group)]
+#cols<-rainbow(nlevels(Group))
 
-cols<-rainbow(nlevels(Group))
+#new color selection
+gg_color_hue <- function(n) {
+  hues = seq(15, 375, length = n + 1)
+  hcl(h = hues, l = 65, c = 100)[1:n]
+}
+
+
+cols<-gg_color_hue(nlevels(Group))
 
 
 # Convert to Log2 if TRUE
@@ -149,6 +163,33 @@ expr.pca <- t(expr.pca)
 expr.pca <- expr.pca[, apply(expr.pca, 2, var, na.rm = T) != 0]
 expr.pca <- prcomp(expr.pca, center = T, scale. = T)
 
+
+pca_plot<-function(data,anno,x=1,y=2,frame=T,groupname=T,label=F,cols=cols,shape=T) {
+  
+  if(shape) {
+	pca.plot<-autoplot(data, x=x, y=y, data=anno, colour="Group", label.size = 4,size=4,alpha = 0.75,label=label,frame=frame,frame.type="norm",frame.alpha = 0,frame.level=0.75)
+	}else {
+	pca.plot<-autoplot(data, x=x, y=y, data=anno, colour="Group", label.size = 4,size=4,alpha = 0.75,label=label,frame=frame,frame.type="norm",frame.alpha = 0,frame.level=0.75,shape=F)	
+	}
+	
+	pca.plot<-pca.plot+theme_classic() + theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
+    scale_color_manual(values = cols)
+  
+  #coordinate for groups
+  if(groupname) {
+    pca.plot.x<-unlist(lapply(split(pca.plot$data[,paste("PC",x,sep="")],anno$Group),mean))
+    pca.plot.y<-unlist(lapply(split(pca.plot$data[,paste("PC",y,sep="")],anno$Group),mean))
+    
+    pca.plot.xy<-data.frame(pca.plot.x,pca.plot.y)
+    colnames(pca.plot.xy)<-c(paste("PC",x,sep=""),paste("PC",y,sep=""))
+    
+    pca.plot<-pca.plot+geom_text(aes_string(x=paste("PC",x,sep=""),y=paste("PC",y,sep="")),data=pca.plot.xy,label=levels(anno$Group),color=toupper(cols))
+  }
+  
+  print(pca.plot)
+}
+
+
 # Plot of variances associated with each PC
 cat("Creating plot of variances associated with each PC ...\n")
 var_plot <- paste0(opt$out,"/" , opt$pn, "_PCA-variances.png")
@@ -158,63 +199,60 @@ dev.off()
 
 # PC1 vs PC2
 cat("Creating PCA plot PC1 vs. PC2 with sample names ...\n")
-pca_plot1 <- paste0(opt$out,"/" , opt$pn, "_PCA-1&2-names.png")
-CairoPNG(filename = pca_plot1,res = 300,width=2500, height=2200)
-autoplot(expr.pca, x=1, y=2, data=pca.groups, colour="Group", label = TRUE, label.size = 4, shape=F) +
-  theme_classic() + theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
-  scale_color_manual(values = cols)
+
+CairoPNG(filename = paste0(opt$out,"/" , opt$pn, "_PCA-1&2-names.png"),res = 300,width=2500, height=2200)
+pca_plot(expr.pca, x=1, y=2,anno=pca.groups,cols=cols,frame=F,label=T,groupname=F,shape=F)
 dev.off()
 
 
 cat("Creating PCA plot PC1 vs. PC2 ...\n")
-pca_plot2 <- paste0(opt$out,"/" , opt$pn, "_PCA-1&2.png")
-CairoPNG(filename = pca_plot2,res = 300,width=2500, height=2200)
-autoplot(expr.pca, x=1, y=2, data=pca.groups, colour="Group", size = 4, alpha = 0.75) + 
-  theme_classic() + theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
-  scale_color_manual(values = cols) 
+
+#PNG version
+CairoPNG(filename = paste0(opt$out,"/" , opt$pn, "_PCA-1&2.png"),res = 300,width=2500, height=2200)
+pca_plot(expr.pca, x=1, y=2,anno=pca.groups,cols=cols,frame=F)
 dev.off()
 
-pca_plot2.pdf <- paste0(opt$out,"/" , opt$pn, "_PCA-1&2.pdf")
-pdf(file =pca_plot2.pdf,width=7.5, height=6.6) #default 7x7 inch
-autoplot(expr.pca, x=1, y=2, data=pca.groups, colour="Group", size = 4, alpha = 0.75) + 
-  theme_classic() + theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
-  scale_color_manual(values = cols) 
+CairoPNG(filename = paste0(opt$out,"/" , opt$pn, "_PCA-1&2_eclipse.png"),res = 300,width=2500, height=2200)
+pca_plot(expr.pca, x=1, y=2,anno=pca.groups,cols=cols,frame=T)
 dev.off()
 
+#PDF version
+pdf(file =paste0(opt$out,"/" , opt$pn, "_PCA-1&2.pdf"),width=7.5, height=6.6) #default 7x7 inch
+#print(pca_plot2.plot)
+pca_plot(expr.pca, x=1, y=2,anno=pca.groups,cols=cols,frame=F)
+dev.off()
+
+pdf(file =paste0(opt$out,"/" , opt$pn, "_PCA-1&2_eclipse.pdf"),width=7.5, height=6.6) #default 7x7 inch
+#print(pca_plot2.plot)
+pca_plot(expr.pca, x=1, y=2,anno=pca.groups,cols=cols,frame=T)
+dev.off()
 
 # PC1 vs PC3
 cat("Creating PCA plot PC1 vs. PC3 with sample names ...\n")
-pca_plot3 <- paste0(opt$out,"/" , opt$pn, "_PCA-1&3-names.png")
-CairoPNG(filename = pca_plot3,res = 300,width=2500, height=2200)
-autoplot(expr.pca, x=1, y=3, data=pca.groups, colour="Group", label = TRUE, label.size = 4, shape=F) +
-  theme_classic() + theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
-  scale_color_manual(values = cols)
+CairoPNG(filename = paste0(opt$out,"/" , opt$pn, "_PCA-1&3-names.png"),res = 300,width=2500, height=2200)
+pca_plot(expr.pca, x=1, y=3,anno=pca.groups,cols=cols,frame=F,label=T,groupname=F,shape=F)
 dev.off()
 
 cat("Creating PCA plot PC1 vs. PC3 ...\n")
-pca_plot3 <- paste0(opt$out,"/" , opt$pn, "_PCA-1&3.png")
-CairoPNG(filename = pca_plot3,res = 300,width=2500, height=2200)
-autoplot(expr.pca, x=1, y=3, data=pca.groups, colour="Group", size = 4, alpha = 0.75) + 
-  theme_classic() + theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
-  scale_color_manual(values = cols) 
+CairoPNG(filename = paste0(opt$out,"/" , opt$pn, "_PCA-1&3.png"),res = 300,width=2500, height=2200)
+pca_plot(expr.pca, x=1, y=3,anno=pca.groups,cols=cols,frame=F)
+dev.off()
+
+cat("Creating PCA plot PC1 vs. PC3 ...\n")
+CairoPNG(filename = paste0(opt$out,"/" , opt$pn, "_PCA-1&3_eclipse.png"),res = 300,width=2500, height=2200)
+pca_plot(expr.pca, x=1, y=3,anno=pca.groups,cols=cols,frame=T)
 dev.off()
 
 
 # PC2 vs PC3
 cat("Creating PCA plot PC2 vs. PC3 with sample names ...\n")
-pca_plot23 <- paste0(opt$out,"/" , opt$pn, "_PCA-2&3-names.png")
-CairoPNG(filename = pca_plot23,res = 300,width=2500, height=2200)
-autoplot(expr.pca, x=2, y=3, data=pca.groups, colour="Group", label = TRUE, label.size = 4, shape=F) +
-  theme_classic() + theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
-  scale_color_manual(values = cols)
+CairoPNG(filename = paste0(opt$out,"/" , opt$pn, "_PCA-2&3-names.png"),res = 300,width=2500, height=2200)
+pca_plot(expr.pca, x=2, y=3,anno=pca.groups,cols=cols,frame=F,label=T,groupname=F,shape=F)
 dev.off()
 
 cat("Creating PCA plot PC2 vs. PC3 ...\n")
-pca_plot23 <- paste0(opt$out,"/" , opt$pn, "_PCA-2&3.png")
-CairoPNG(filename = pca_plot23,res = 300,width=2500, height=2200)
-autoplot(expr.pca, x=2, y=3, data=pca.groups, colour="Group", size = 4, alpha = 0.75) + 
-  theme_classic() + theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
-  scale_color_manual(values = cols) 
+CairoPNG(filename = paste0(opt$out,"/" , opt$pn, "_PCA-2&3.png"),res = 300,width=2500, height=2200)
+pca_plot(expr.pca, x=2, y=3,anno=pca.groups,cols=cols,frame=F)
 dev.off()
 
 
