@@ -14,7 +14,7 @@ library(Cairo,quietly =T)
 #Version
 ####
 
-version="0.51"
+version="0.6"
 
 #0.2b, change auto filter to *5. Add indfilter and cookscutoff option
 #0.23, add write_table_proper
@@ -23,7 +23,7 @@ version="0.51"
 #0.4 add new volcano plot and gene annotation. --anno and --config are used. --anno is different from previous argument
 #0.41, changed title for Significance 
 #0.51, add xlim ylim for volcano
-
+#0.6, supports complicated GLM analysis. Change formula into model.matrix
 
 description=paste0("de_test\nversion ",version,"\n","Usage:\nDescription: Differential Expression calculation using DESeq2\n")
 
@@ -103,8 +103,65 @@ filter_data <- function(mat,type="sum",cutoff=10,na.rm=0) {
 ######
 #DESeq2
 ######
-
 deseq2_test <- function(mat,anno,design,fc_cutoff=1,q_cutoff=0.05,pmethod="Wald",qmethod="BH",core=core,treat,ref,independentfiltering=T,cookscutoff=T){
+
+	#Get the last variable
+	design<-gsub(" ","",design)
+	design.vars<-gsub("~","",design)
+	design.vars<-unlist(strsplit(design.vars,"\\+"))
+	
+	#anno relevel column for last variable #only works for 1vs1 for the selected col
+	#convert to factor
+	anno[,design.vars[length(design.vars)]]<-factor(anno[,design.vars[length(design.vars)]],levels=c(ref,treat))
+	
+	#convert to model matrix
+	design.mm<-model.matrix(as.formula(design),anno)	
+	print(design.mm)
+	
+	dds <- DESeqDataSetFromMatrix(countData = round(mat),
+	                              colData = anno,
+	                              design= design.mm)
+	contrast<-paste0(design.vars[length(design.vars)],make.names(treat))
+	
+	#perform test
+	dds <- DESeq(dds,test=pmethod)
+	resultsNames(dds) # lists the coefficients
+	
+	#comp<-tail(all.vars(as.formula(design)),n=1) #the last variable of the formula is used as comparison
+	
+	if(cookscutoff) {
+		res <- results(dds, pAdjustMethod =qmethod,contrast=list(contrast),independentFiltering=independentfiltering)
+	} else {
+		res <- results(dds, pAdjustMethod =qmethod,contrast=list(contrast),independentFiltering=independentfiltering,cooksCutoff=cookscutoff)	
+	}
+	
+	fc<-res[,2]
+	p<-res[,5]
+	q<-res[,6]
+	stat<-apply(res[,c(1,3,4)],1,function(x) {paste(x,collapse = ",")})
+	
+	#significance by fc & qval
+	sig<-rep(0,length(q))
+	
+	sig[!is.na(fc) & fc>=fc_cutoff & !is.na(q) & q<q_cutoff]=1
+	sig[!is.na(fc) & fc<=-fc_cutoff & !is.na(q) & q<q_cutoff]=-1
+	sig[is.na(fc) | is.na(q) ]=NA
+
+	mat.result<-cbind(fc,stat,p,q,sig)
+	
+	#colnames(mat.result)<-c(values(res)[[2]][2],"DESeq2 Stat:Mean,SE,Wald stat",values(res)[[2]][5],values(res)[[2]][6],paste("Significance: Abs(Log2FC)>=",round(fc_cutoff,3)," ",qmethod, "P<",q_cutoff,sep=""))
+	
+	colnames(mat.result)<-c(paste0("Log2FC ",treat," vs ",ref),"DESeq2 Stat:Mean,SE,Wald stat",values(res)[[2]][5],values(res)[[2]][6],paste("Significance: Abs(Log2FC)>=",round(fc_cutoff,3)," ",qmethod, "P<",q_cutoff,sep=""))
+	
+	result<-list()
+	result$result=mat.result
+	result$dds=dds
+	result$res=res
+
+	return(result)
+}
+
+deseq2_test_v1 <- function(mat,anno,design,fc_cutoff=1,q_cutoff=0.05,pmethod="Wald",qmethod="BH",core=core,treat,ref,independentfiltering=T,cookscutoff=T){
 
   #anno and design may need to be checked
 
@@ -426,7 +483,7 @@ filter_de<-function(data,fc,q) {
 
 #anno and config are changed in v0.6
 data<-read.table(args$"in",header=T,row.names=1,sep="\t",check.names=F,flush=T)
-config<-read.table(args$config,header=T,row.names=1,sep="\t",check.names=F,flush=T)
+config<-read.table(args$config,header=T,row.names=1,sep="\t",check.names=F,flush=T,colClasses="factor")
 
 if(!is.na(args$anno)) {
 	anno<-read.table(args$anno,header=T,row.names=1,sep="\t",check.names=F,comment.char="",quote="",flush=T)

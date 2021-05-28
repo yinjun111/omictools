@@ -22,6 +22,7 @@ my $version="0.7";
 #v0.6, major updates planned for R4.0, comparisons of multiple groups. turn off txde
 #v0.61, adding -s for --comparisons
 #v0.7, v88 and AWS
+#v0.8, support complicated GLM
 
 my $usage="
 
@@ -377,7 +378,7 @@ my @factors_array;
 if($formula=~/\~(.+)/) {
 	my $cont=$1;
 	#a bit loose on factor name
-	while($cont=~/([^\+]+)/g) {
+	while($cont=~/([^\+\:]+)/g) {
 		
 		#remove trailing white spaces
 		my $factor=$1;
@@ -389,8 +390,8 @@ if($formula=~/\~(.+)/) {
 	}
 }
 
-print STDERR join(",",@factors_array)," factors are identified from -f $formula\n\n" if $verbose;
-print LOG join(",",@factors_array)," factors are identified from -f $formula\n\n";
+print STDERR join(",",sort keys %factors)," factors are identified from -f $formula\n\n" if $verbose;
+print LOG join(",",sort keys %factors)," factors are identified from -f $formula\n\n";
 
 
 #---------------
@@ -462,7 +463,7 @@ for(my $compnum=0;$compnum<@trts;$compnum++) {
 				$configattrs{uc $array[$num]}=$num;
 			}
 			
-			foreach my $factor (@factors_array) {
+			foreach my $factor (sort keys %factors) {
 				if(defined $configattrs{uc $factor}) {
 					print STDERR "$factor is identified at the ",$configattrs{uc $factor}+1,"(th) column of $configfile.\n" if $verbose;
 					print LOG "$factor is identified at the ",$configattrs{uc $factor}+1,"(th) column of $configfile.\n";
@@ -476,7 +477,7 @@ for(my $compnum=0;$compnum<@trts;$compnum++) {
 			}
 			
 			#print out new config for DE
-			print OUT "Sample\t",join("\t",@factors_array),"\n";
+			print OUT "Sample\t",join("\t",sort keys %factors),"\n";
 		
 		}
 		else {
@@ -488,14 +489,14 @@ for(my $compnum=0;$compnum<@trts;$compnum++) {
 				print OUT join("\t",@array[0,@attrselcols]),"\n";
 			}
 			else {
-				#only print out used samples
+				#only print out used samples by last column
 				if($array[$configattrs{uc $factors_array[$#factors_array]}] eq $trt || $array[$configattrs{uc $factors_array[$#factors_array]}] eq $ref) {
 					print OUT join("\t",@array[0,@attrselcols]),"\n";
 					push @sampleselrows,$fileline+1; #sample row number in config is the same with sample col number in count file
 				}
 			}
 			
-			foreach my $factor (@factors_array) {
+			foreach my $factor (sort keys %factors) {
 				$attr2name{$factor}{$array[$configattrs{uc $factor}]}++;
 			}
 		}
