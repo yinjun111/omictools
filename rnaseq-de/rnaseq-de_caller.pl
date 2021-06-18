@@ -11,7 +11,7 @@ use File::Basename qw(basename dirname);
 ########
 
 
-my $version="0.7";
+my $version="0.81";
 
 #version 0.2a, add r version log
 #v0.3 add runmode
@@ -23,6 +23,8 @@ my $version="0.7";
 #v0.61, adding -s for --comparisons
 #v0.7, v88 and AWS
 #v0.8, support complicated GLM
+#v0.81, add idf and cc options
+
 
 my $usage="
 
@@ -72,6 +74,9 @@ Optional Parameters:
 
     --fccutoff        Log2 FC cutoff [1]
     --qcutoff         Corrected P cutoff [0.05]
+
+    --independentfiltering   Apply independentfiltering in DESeq2 [T]
+    --cookscutoff            Apply Cook\'s cutoff  in DESeq2 [T]
 
     --txde            Run DE tests for Tx [F]
 
@@ -138,6 +143,9 @@ my $filter="auto";
 my $txde="F";
 my $fccutoff=1;
 my $qcutoff=0.05;
+my $independentfiltering="T";
+my $cookscutoff="T";
+
 
 my $verbose=1;
 my $task=5;
@@ -169,6 +177,8 @@ GetOptions(
 	"qcutoff=s" => \$qcutoff,
 	
 	"txde=s" => \$txde,
+	"independentfiltering=s" => \$independentfiltering,
+	"cookscutoff=s" => \$cookscutoff,	
 	
 	"tx|t=s" => \$tx,	
 	"runmode|r=s" => \$runmode,		
@@ -608,7 +618,7 @@ for(my $compnum=0;$compnum<@trts;$compnum++) {
 	#}
 
 	#Gene #changed after v0.6
-	print S1 "$rscript $descript -i $outputfolder_de/",$rnaseq2files{"gene"}{"selected"}," -c $newconfigfile -o $outputfolder_de/",$rnaseq2files{"gene"}{"result"}," -f \"$formula\" -t $trt -r $ref --fccutoff $fccutoff --qcutoff $qcutoff --qmethod $qmethod --pmethod $pmethod --filter $filter -a ",$tx2ref{$tx}{"geneanno"}," > $outputfolder_de/gene_de_test_run.log 2>&1;"; #need to check here #add r script running log
+	print S1 "$rscript $descript -i $outputfolder_de/",$rnaseq2files{"gene"}{"selected"}," -c $newconfigfile -o $outputfolder_de/",$rnaseq2files{"gene"}{"result"}," -f \"$formula\" -t $trt -r $ref --fccutoff $fccutoff --qcutoff $qcutoff --qmethod $qmethod --pmethod $pmethod --filter $filter -a ",$tx2ref{$tx}{"geneanno"}," --independentfiltering $independentfiltering --cookscutoff $cookscutoff > $outputfolder_de/gene_de_test_run.log 2>&1;"; #need to check here #add r script running log
 
 	#Gene anno
 	print S1 "$mergefiles -m $outputfolder_de/",$rnaseq2files{"gene"}{"result"}," -i ".$tx2ref{$tx}{"geneanno"}." -o $outputfolder_de/",$rnaseq2files{"gene"}{"resultanno"},";\n";
@@ -616,7 +626,7 @@ for(my $compnum=0;$compnum<@trts;$compnum++) {
 
 	if($txde eq "T") {
 		#Tx
-		print S1 "$rscript $descript -i $outputfolder_de/",$rnaseq2files{"tx"}{"selected"}," -c $newconfigfile -o $outputfolder_de/",$rnaseq2files{"tx"}{"result"}," -f \"$formula\" -t $trt -r $ref --fccutoff $fccutoff --qcutoff $qcutoff --qmethod $qmethod --pmethod $pmethod --filter $filter"," > $outputfolder_de/tx_de_test_run.log 2>&1;";
+		print S1 "$rscript $descript -i $outputfolder_de/",$rnaseq2files{"tx"}{"selected"}," -c $newconfigfile -o $outputfolder_de/",$rnaseq2files{"tx"}{"result"}," -f \"$formula\" -t $trt -r $ref --fccutoff $fccutoff --qcutoff $qcutoff --qmethod $qmethod --pmethod $pmethod --filter $filter --independentfiltering $independentfiltering --cookscutoff $cookscutoff > $outputfolder_de/tx_de_test_run.log 2>&1;";
 
 		#tx anno
 		print S1 "$mergefiles -m $outputfolder_de/",$rnaseq2files{"tx"}{"result"}," -i ".$tx2ref{$tx}{"txanno"}." -o $outputfolder_de/",$rnaseq2files{"tx"}{"resultanno"},";\n";
