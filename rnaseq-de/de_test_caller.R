@@ -14,7 +14,7 @@ library(Cairo,quietly =T)
 #Version
 ####
 
-version="0.61"
+version="0.62"
 
 #0.2b, change auto filter to *5. Add indfilter and cookscutoff option
 #0.23, add write_table_proper
@@ -25,7 +25,7 @@ version="0.61"
 #0.51, add xlim ylim for volcano
 #0.6, supports complicated GLM analysis. Change formula into model.matrix
 #0.61, minor changes for read.table
-
+#0.62, remove model matrix empty columns
 
 description=paste0("de_test\nversion ",version,"\n","Usage:\nDescription: Differential Expression calculation using DESeq2\n")
 
@@ -118,6 +118,9 @@ deseq2_test <- function(mat,anno,design,fc_cutoff=1,q_cutoff=0.05,pmethod="Wald"
 	
 	#convert to model matrix
 	design.mm<-model.matrix(as.formula(design),anno)	
+	
+	#remove empty col
+	design.mm<-design.mm[,apply(design.mm,2,sum)>0] 
 	print(design.mm)
 	
 	dds <- DESeqDataSetFromMatrix(countData = round(mat),
