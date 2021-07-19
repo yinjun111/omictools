@@ -1,5 +1,7 @@
 #!/bin/sh
 
+#may not work
+
 name=$1
 config=$2
 key=$3

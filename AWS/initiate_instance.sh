@@ -1,3 +1,6 @@
+
+#script to creat pcluster
+
 #update yum
 sudo yum -y update
 
