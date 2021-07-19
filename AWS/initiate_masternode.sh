@@ -80,6 +80,9 @@ mkdir -p /data/jyin/Pipeline_Test
 sudo chown -R centos /data/jyin/Pipeline_Test
 /usr/local/bin/aws s3 sync s3://ferring-omictools/Testdata/ /data/jyin/Pipeline_Test/Testdata/
 
+#copy GATK3
+aws s3 cp s3://ferring-omictools/Others/GATK3/ /apps/GATK3/ --recursive
+
 #####
 #install R #need to remove anaconda from PATH
 #####
