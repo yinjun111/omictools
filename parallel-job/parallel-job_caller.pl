@@ -9,13 +9,14 @@ use List::Util qw(min);
 #Updates
 ########
 
-my $version="0.21";
+my $version="0.22";
 #0.11 change procs to ppn, procs is still usable but hidden
 #0.12 add --asis to submit the task directly
 #0.13 add note for --nodes
 #0.14 support job submission assigning to multiple nodes
 #0.2, update for AWS ParallelCluster Torque
 #0.21, minor correction
+#0.22, hold compute node
 
 ########
 #Prerequisites
@@ -36,8 +37,11 @@ version: $version
 Usage: omictools parallel-job -i yourscripts.sh -n yourscripts -o jobsubmissionfolder -t 5 --nodes 1 --procs 4 -m 10gb -r
 Or simpley type: omictools parallel-job -i yourscripts.sh -r
 
-#Example, use 4 cpus per task. If a node has 12 cpus, only 3 tasks will be ran in that node. This is to control the number of jobs per node.
+#Example1, use 4 cpus per task. If a node has 12 cpus, only 3 tasks will be ran in that node. This is to control the number of jobs per node.
 omictools parallel-job -i yourscripts.sh -o jobsubmissionfolder -t 20 --ppn 4 -r
+
+#Example2, to keep the AWS compute node active for 600 seconds
+omictools parallel-job -k 600
 
 
 Description: In Torque HPC cluster, use multiple controled qsub sessions for paralleling.
@@ -71,6 +75,8 @@ Parameters:
                            Each task file needs to be successfully ran before the next one can be started
 
     --asis|-a         Don't split the commands in the file. Submit the task file as it is
+
+    --keep|-k         Keep compute nodes for 600s [none]
 	
     --runmode|-r      
     --env|-e          Use your own runing envir, e.g. to source ~/.bashrc
@@ -106,6 +112,7 @@ my $verbose=1;
 #my $queue="";
 my $env=0;
 my $hold;
+my $keep="none";
 my $tandem=0;
 my $asis=0;
 my $name;
@@ -130,6 +137,7 @@ GetOptions(
 	#"queue|q=s" => \$queue,
 	"runmode"=> \$runmode,
 	#"hold|d=s" => \$hold, #can be implemented if needed to #PBS -W 
+	"keep|k=s" => \$keep,
 	"tandem"=> \$tandem,
 	"asis|a"=> \$asis,	
 	"env|e" => \$env,
@@ -159,6 +167,24 @@ my @groupattrs=getgrgid($userattrs[3]);
 print STDERR "\nWelcome $userattrs[6]($user) from $groupattrs[0] to Torque HPC!\n";
 #print LOG "\nWelcome $userattrs[6]($user) from $groupattrs[0] to Torque HPC!\n";
 
+
+########
+#Check --keep
+########
+
+if($keep ne "none") {
+	
+	print STDERR "Keep the AWS Compute node for $keep seconds.\n\n";
+	
+	#print out temp file
+	open(OUT,">/data/tmp/keep_node.sh") || die $!;
+	print OUT "sleep $keep;rm /data/tmp/keep_node.sh;rm -R /data/tmp/keep_node_submit";
+	close OUT;
+	
+	system("omictools parallel-job -i /data/tmp/keep_node.sh -o /data/tmp/keep_node_submit -r");
+
+	exit;
+}
 
 ########
 #Check parameters

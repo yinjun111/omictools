@@ -22,11 +22,12 @@ use File::Basename qw(basename);
 ########
 
 
-my $version="0.3";
+my $version="0.31";
 
 #0.2, add FILTER tag
 #0.21, change dp to <, not <=. Same as VariantFiltration
 #0.3, add AF filter
+#0.31, add log file
 
 my $usage="
 
@@ -84,8 +85,9 @@ GetOptions(
 	
 );
 
+my $outfilefolder=abs_path_dir(abs_path($outfile));
 
-my $logfile="rnaseq-var_filter_run.log";
+my $logfile="$outfilefolder/rnaseq-var_filter_run.log";
 
 my %filters=map {$_,1} split(",",$filter);
 
@@ -156,7 +158,7 @@ while(<IN>) {
 		#filter by FILTER column
 		unless(defined $filters{$array[6]}) {
 			#$fnum++;
-			$filternums{"GATK-Filter:".$filter}++;		
+			$filternums{"GATK-Filter:".$array[6]}++;		
 			next;
 		}
 		
@@ -200,7 +202,27 @@ close OUT;
 
 #print STDERR "$anum SNPs are processed using rnaseq-var_filter.\n$cnum SNPs are filtered by matching common SNPs.\n$dnum SNPs are filtered by matching DP filter.\n$fnum SNPs are filtered by matching FILTER $filter tag.\n$finalnum SNPs passed all the filters.\n\n";
 
-print STDERR "$anum SNPs are processed using rnaseq-var_filter.\n";
-print STDERR "Variants filtered:\n";
-print STDERR join("\n",map {$_."\t".$filternums{$_}} sort keys %filternums),"\n\n";
-print STDERR "$finalnum SNPs passed all the filters.\n\n";
+open(LOG,">$logfile") || die $!;
+
+print LOG "$anum SNPs are processed using rnaseq-var_filter.\n";
+print LOG "Variants filtered:\n";
+print LOG join("\n",map {$_."\t".$filternums{$_}} sort keys %filternums),"\n\n";
+print LOG "$finalnum SNPs passed all the filters.\n\n";
+
+close LOG;
+
+
+
+######
+#Functions
+######
+
+
+sub abs_path_dir {
+	my $path=shift @_;
+	my $path_dir;
+	if($path=~/[^\/]+$/) {
+		$path_dir=$`;
+	}
+	return $path_dir;
+}

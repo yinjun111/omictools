@@ -1,8 +1,9 @@
 #!/bin/sh
 
-version="1.0"
+version="1.1"
 
 
+#v1.1 add samtools index
 
 #######
 #Usage
@@ -115,7 +116,7 @@ star=/apps/STAR-2.7.8a/bin/Linux_x86_64/STAR
 starfolder=/apps/STAR-2.7.8a/bin/Linux_x86_64/
 rsem=/apps/RSEM-1.3.3/rsem-prepare-reference
 
-
+samtools=/apps/samtools-1.12/bin/samtools
 
 #######
 #Input/Output
@@ -139,6 +140,15 @@ $star --runMode genomeGenerate --runThreadN 6 --genomeDir $outfolder/$buildname\
 #Build RSEM Index
 printf "$rsem --gtf $outfolder/${gtffilename/.gtf/_ucsc.gtf} --star --star-path $starfolder -p 6 $outfolder/${fastafilename/.fa/_ucsc.fa} $outfolder/$buildname\_STAR/$species\_RSEM >> $logfile 2>&1\n" | tee -a $logfile
 $rsem --gtf $outfolder/${gtffilename/.gtf/_ucsc.gtf} --star --star-path $starfolder -p 6 $outfolder/${fastafilename/.fa/_ucsc.fa} $outfolder/$buildname\_STAR/$species\_RSEM >> $logfile 2>&1
+
+
+#Build samtools .fai index
+printf "$samtools faidx $outfolder/${fastafilename/.fa/_ucsc.fa}" | tee -a $logfile
+$samtools faidx $outfolder/${fastafilename/.fa/_ucsc.fa}
+
+#Build samtools .dict index
+printf "$samtools dict $outfolder/${fastafilename/.fa/_ucsc.fa.dict}" | tee -a $logfile
+$samtools dict $outfolder/${fastafilename/.fa/_ucsc.fa} > $outfolder/${fastafilename/.fa/_ucsc.dict}
 
 
 #Generate gene annotation

@@ -4,10 +4,10 @@ use Getopt::Long;
 use File::Basename;
 use Cwd qw(abs_path);
 
-my $version="0.11";
+my $version="0.12";
 
 #v0.11, human & mouse annotation added
-
+#v0.12, rnaseq-var by GATK3 is added
 
 my $usage="
 
@@ -30,8 +30,6 @@ Parameters:
     rnaseq-motif      RNA-seq TFBS motif finding pipeline
     rnaseq-motif-summary  RNA-seq TFBS motif finding results summary	
     motif-finder      Transcription factor binding motif prediction
-
-    gsea-gen          Generate files ready for GSEA analysis
 
     ########
     #AWS

@@ -209,6 +209,27 @@ tar xzvf sratoolkit.2.11.0-centos_linux64.tar.gz
 
 sudo cp -R sratoolkit.2.11.0-centos_linux64/ /apps/
 
+#htslib for GATK3
+cd /home/centos/Programs
+wget https://github.com/samtools/htslib/releases/download/1.13/htslib-1.13.tar.bz2
+
+cd /home/centos/Programs/htslib-1.13
+./configure --prefix=/apps/htslib-1.13
+make
+sudo make install
+
+#snpEff
+cd /home/centos/Programs
+wget https://snpeff.blob.core.windows.net/versions/snpEff_latest_core.zip
+
+unzip snpEff_latest_core.zip
+cd /home/centos/Programs/snpEff
+sudo cp -R /home/centos/Programs/snpEff /apps/snpEff
+
+sudo chmod 777 /apps/snpEff
+
+java -jar /apps/snpEff/snpEff.jar download hg38
+java -jar /apps/snpEff/snpEff.jar download mm10
 
 #######
 #chown for some folders
