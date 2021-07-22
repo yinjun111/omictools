@@ -76,7 +76,7 @@ Parameters:
 
     --asis|-a         Don't split the commands in the file. Submit the task file as it is
 
-    --keep|-k         Keep compute nodes for 600s [none]
+    --keep|-k         Keep compute nodes for specified time in seconds [none]
 	
     --runmode|-r      
     --env|-e          Use your own runing envir, e.g. to source ~/.bashrc
