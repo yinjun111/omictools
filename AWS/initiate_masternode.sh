@@ -23,7 +23,7 @@ sudo chown centos /home/centos/Pipeline/
 #create users
 mkdir /data/users
 
-for user in jyin qmeng yyue mparks yxu;do
+for user in jyin qmeng yyue mparks yxu cbadger;do
 	sudo useradd $user
 	echo "$user,`id -u $user`" >> /data/users/userlistfile
 done

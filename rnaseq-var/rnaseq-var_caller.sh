@@ -359,6 +359,16 @@ else
 	
 fi
 
+
+#remove temporary files
+printf "\n#Remove temporary files.\n\nrm $outfolder/gatk3/${filename}Aligned.out_added_sorted.bam;rm $outfolder/gatk3/${filename}Aligned.out_dedupped.bam;\n" | tee -a  $runfile
+
+if [ "$dryrun" == "F" ];then
+		rm $outfolder/gatk3/${filename}Aligned.out_added_sorted.bam
+		echo ""
+fi
+
+
 ######
 #Step 3
 ######
@@ -372,6 +382,13 @@ if [ "$dryrun" == "F" ];then
 	eval $java -jar $gatk3folder/GenomeAnalysisTK.jar -T SplitNCigarReads -R $genomefasta -I $outfolder/gatk3/${filename}Aligned.out_dedupped.bam -o $outfolder/gatk3/${filename}Aligned.out_split.bam -rf ReassignOneMappingQuality -U ALLOW_N_CIGAR_READS -RMQF 255 -RMQT 60 --use_jdk_deflater --use_jdk_inflater >> $logfile 2>&1
 fi
 
+#remove temporary files
+printf "\n#Remove temporary files.\n\nrm $outfolder/gatk3/${filename}Aligned.out_added_sorted.bam;rm $outfolder/gatk3/${filename}Aligned.out_dedupped.bam;\n" | tee -a  $runfile
+
+if [ "$dryrun" == "F" ];then
+		rm $outfolder/gatk3/${filename}Aligned.out_dedupped.bam
+		echo ""
+fi
 
 
 #######
@@ -399,19 +416,6 @@ printf "eval $java -jar $gatk3folder/GenomeAnalysisTK.jar -T HaplotypeCaller -R 
 if [ "$dryrun" == "F" ];then
 	eval $java -jar $gatk3folder/GenomeAnalysisTK.jar -T HaplotypeCaller -R $genomefasta -I $outfolder/gatk3/${filename}Aligned.out_split.bam -dontUseSoftClippedBases -stand_call_conf 20.0 -o $outfolder/gatk3/${filename}output.vcf --use_jdk_deflater --use_jdk_inflater >> $logfile 2>&1
 fi
-
-
-
-
-#remove temporary files
-printf "\n#Remove temporary files.\n\nrm $outfolder/gatk3/${filename}Aligned.out_added_sorted.bam;rm $outfolder/gatk3/${filename}Aligned.out_dedupped.bam;\n" | tee -a  $runfile
-
-if [ "$dryrun" == "F" ];then
-		rm $outfolder/gatk3/${filename}Aligned.out_added_sorted.bam
-		rm $outfolder/gatk3/${filename}Aligned.out_dedupped.bam
-		echo ""
-fi
-
 
 
 

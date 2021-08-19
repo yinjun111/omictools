@@ -22,13 +22,13 @@ use File::Basename qw(basename);
 ########
 
 
-my $version="0.1";
+my $version="0.2";
 
-#rnaseq-var-summary
-#v0.2, summary genotype
 
 #var-summary
 #v0.1
+#v0.2, summary genotype
+
 
 
 my $usage="
@@ -43,8 +43,6 @@ Parameters:
     --in|-i           Input folder, containing rnaseq-var results
     --out|-o          Output folder
     --cate|-c         Category, variants_impact_HIGH (default), variants_impact_LOW, variants_impact_MODERATE or variants_impact_MODIFIER
-
-	
 	
 ";
 
@@ -262,8 +260,7 @@ sub process_snpeff_gtnr {
 	#get all summary.genes.txt
 	my @infiles=glob($infiles);
 
-	#my %sample2snp;
-	#my %samples;
+	my %samples;
 	my %varids;
 	my %varidannos;
 
@@ -279,11 +276,16 @@ sub process_snpeff_gtnr {
 		print STDERR "$file\n";
 		print LOG "$file\n";
 		my $samplename;
-		
+				
 		#should be the same as the previous one
 		if($file=~/([^\/]+)\/snpanno/) {
 			$samplename=$1;
 		}
+		
+		$samples{$samplename}++;
+
+		print STDERR "$samplename\n";
+		print LOG "$samplename\n";
 		
 		open(IN,$file) || die "ERROR:Can't read $file.$!\n";
 		while(<IN>) {
@@ -321,6 +323,9 @@ sub process_snpeff_gtnr {
 			}
 		}
 		close IN;
+		
+		print STDERR scalar(keys %{$sample2gt_nr{$samplename}})," variants detected.\n";
+		print LOG scalar(keys %{$sample2gt_nr{$samplename}})," variants detected.\n";
 	}
 
 	#GT, nofilter, NR
