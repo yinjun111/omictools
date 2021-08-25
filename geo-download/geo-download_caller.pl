@@ -15,10 +15,11 @@ use Text::CSV;
 ########
 
 
-my $version="0.3";
+my $version="0.31";
 
 #v0.2, Fastq files for PE
 #v0.3, change to fasterq-dump
+#v0.31, able to read zipped file
 
 my $usage="
 
@@ -31,7 +32,7 @@ Description: Download GEO SRA fastq files.
 Parameters:
 
     --sra             SRA file, SraRunTable.txt (csv). SRA should be manually checked and corrected for annotations.
-    --geo             GEO series matrix file(s), separate by \",\"
+    --geo             GEO series matrix file(s), can be zipped or unzipped, separate by \",\"
     --seq             SE or PE [SE]
     --out|-o          output folder
 
@@ -165,7 +166,12 @@ my @geotitles;
 my @geogsms;
 
 foreach my $gfile (split(",",$geofile)) {
-	open(IN,$gfile) || die "ERROR:Can't read $gfile.\n\n";
+	if($gfile=~/.gz$/) {
+		open(IN,"zcat $gfile|") || die "ERROR:Can't read $gfile.\n\n";
+	}
+	else {
+		open(IN,$gfile) || die "ERROR:Can't read $gfile.\n\n";
+	}
 
 	while(<IN>) {
 		tr/\r\n\"//d;

@@ -4,10 +4,12 @@ use Getopt::Long;
 use File::Basename;
 use Cwd qw(abs_path);
 
-my $version="0.12";
+my $version="0.13";
 
 #v0.11, human & mouse annotation added
 #v0.12, rnaseq-var by GATK3 is added
+#v0.13, some code cleaning, and add prepare-merge
+
 
 my $usage="
 
@@ -25,6 +27,8 @@ Parameters:
     rnaseq-merge      Merge rnaseq-process results for downstream analyses
     rnaseq-de         Perform DE analysis using DESeq2
     rnaseq-summary    Summarize RNA-Seq DE results
+
+    prepare-merge     Generate a merge folder from raw count file for rnaseq-de/summary analysis
 
     rnaseq-var        RNA-seq variant calling pipeline
     rnaseq-motif      RNA-seq TFBS motif finding pipeline
@@ -101,6 +105,8 @@ my $rnaseq_merge="$omictoolsfolder/rnaseq-merge/rnaseq-merge_caller.pl";
 my $rnaseq_de="$omictoolsfolder/rnaseq-de/rnaseq-de_caller.pl";
 my $rnaseq_summary="$omictoolsfolder/rnaseq-summary/rnaseq-summary_caller.pl";
 
+my $prepare_merge="$omictoolsfolder/prepare-merge/prepare-merge_caller.pl";
+
 my $rnaseq_var="sh $omictoolsfolder/rnaseq-var/rnaseq-var_caller.sh";
 my $rnaseq_var_summary="$omictoolsfolder/rnaseq-var/rnaseq-var_summary.pl";
 my $rnaseq_motif="$omictoolsfolder/rnaseq-motif/rnaseq-motif_caller.pl";
@@ -130,6 +136,8 @@ my %commands2program=(
     "rnaseq-merge"=>$rnaseq_merge,
     "rnaseq-de"=>$rnaseq_de,
 	"rnaseq-summary"=>$rnaseq_summary,
+
+    "prepare-merge"=>$prepare_merge,
 
 	"rnaseq-var"=>$rnaseq_var,
 	"rnaseq-var-summary"=>$rnaseq_var_summary,

@@ -22,10 +22,10 @@ use File::Basename qw(basename);
 ########
 
 
-my $version="0.2";
+my $version="0.3";
 
 #v0.2, summary genotype
-
+#v0.3, merge with var_summary
 
 
 my $usage="
@@ -564,6 +564,244 @@ sub build_timestamp {
 }
 
 
+
+
+sub process_snpeff_gene_summary {
+	my ($infiles,$resultfile,$catesel)=@_;
+
+	#get all summary.genes.txt
+	my @snpeff_infiles=glob($infiles);
+
+	my %sample2snp;
+	
+	my %genes;
+
+	foreach my $file (@snpeff_infiles) {
+		
+		print STDERR "$file\n";
+		print LOG "$file\n";
+		
+		my $filename=basename($file);
+		my $samplename;
+		
+		if($file=~/([^\/]+)\/snpanno/) {
+			$samplename=$1;
+			$samples{$samplename}++;
+		}
+		
+		open(IN,$file) || die "ERROR:Can't read $file.$!\n";
+		while(<IN>) {
+			tr/\r\n//d;
+			next if $_=~/^#/;
+			
+			my @array=split/\t/;
+			
+			#variants_impact_HIGH
+			$sample2snp{$samplename}{$array[0]}=$array[$cate2col{$catesel}];
+			$genes{$array[0]}++;
+		}
+		close IN;
+	}
+
+	print STDERR "Writing $resultfile\n";
+	print LOG "Writing $resultfile\n";
+
+	open(OUT,">$resultfile") || die $!;
+	print OUT "Gene\t",join("\t",sort keys %samples),"\n";
+
+	foreach my $gene (sort keys %genes) {
+		my @marks;
+		
+		foreach my $sample (sort keys %samples) {
+			if(defined $sample2snp{$sample}) {
+				if(defined $sample2snp{$sample}{$gene}) {
+					push @marks,$sample2snp{$sample}{$gene};
+				}
+				else {
+					push @marks,0;
+				}
+			}
+			else {
+				push @marks,0;
+			}
+		}
+		
+		print OUT $gene,"\t",join("\t",@marks),"\n";
+	}
+	close OUT;
+}
+	
+
+sub process_snpeff_gtnr {
+	
+	my ($infiles,$outfile_prefix)=@_;
+	
+	
+	#genotype
+	my $gt_nr_summary="$outfile_prefix.gt_nr_summary.txt";
+	my $gt_anno_summary="$outfile_prefix.gt_anno_summary.txt";
+
+	#allele depth
+	my $ad_nr_summary="$outfile_prefix.ad_nr_summary.txt";
+	my $ad_anno_summary="$outfile_prefix.ad_anno_summary.txt";
+	
+	
+	#get all summary.genes.txt
+	my @infiles=glob($infiles);
+
+	#my %sample2snp;
+	#my %samples;
+	my %varids;
+	my %varidannos;
+
+	my %sample2gt_nr;
+	my %sample2gt_anno;
+
+	my %sample2ad_nr;
+	my %sample2ad_anno;
+
+
+	foreach my $file (@infiles) {
+		
+		print STDERR "$file\n";
+		print LOG "$file\n";
+		my $samplename;
+		
+		#should be the same as the previous one
+		if($file=~/([^\/]+)\/snpanno/) {
+			$samplename=$1;
+		}
+		
+		open(IN,$file) || die "ERROR:Can't read $file.$!\n";
+		while(<IN>) {
+			tr/\r\n//d;
+			next if $_=~/^#/;
+			
+			my @array=split/\t/;
+			
+			#chr,start,name,ref,alt
+			my $varid=join(",",@array[0..4]);
+			
+			#gt, 0, 1 (0/1), 2 (1/1)		
+			
+			my @scores=split(":",$array[9]);
+			my $gt=0;
+			
+			if($scores[0] eq "1/1") {
+				$gt=2;
+			}
+			elsif($scores[0] eq "0/1") {
+				$gt=1;
+			}
+			
+			$sample2gt_nr{$samplename}{$varid}=$gt;
+			$sample2ad_nr{$samplename}{$varid}=$scores[1];
+			
+			$varids{$varid}++;
+				
+			if(defined $array[14]) {		
+				my $varid_anno=join(",",@array[0..4,13,11,12]);
+				
+				$sample2ad_anno{$samplename}{$varid_anno}=$scores[1];
+				$sample2gt_anno{$samplename}{$varid_anno}=$gt;
+				$varidannos{$varid_anno}++;
+			}
+		}
+		close IN;
+	}
+
+	#GT, nofilter, NR
+
+	print STDERR "\nWriting $gt_nr_summary\n";
+	print LOG "\nWriting $gt_nr_summary\n";
+
+	open(OUT,">$gt_nr_summary") || die $!;
+	print OUT "Variant\t",join("\t",sort keys %samples),"\n";
+	foreach my $variant (sort keys %varids) {
+		print OUT $variant,"\t";
+		my @marks;
+		
+		foreach my $sample (sort keys %samples) {
+			if(defined $sample2gt_nr{$sample}{$variant}) {
+				push @marks,$sample2gt_nr{$sample}{$variant};
+			}
+			else {
+				push @marks,0;
+			}
+		}
+		print OUT join("\t",@marks),"\n";
+	}
+	close OUT;
+		
+
+	#GT, nofilter, anno
+	print STDERR "Writing $gt_anno_summary\n";
+	print LOG "Writing $gt_anno_summary\n";
+
+	open(OUT,">$gt_anno_summary") || die $!;
+	print OUT "Variant\t",join("\t",sort keys %samples),"\n";
+	foreach my $variant (sort keys %varidannos) {
+		print OUT $variant,"\t";
+		my @marks;
+		
+		foreach my $sample (sort keys %samples) {
+			if(defined $sample2gt_anno{$sample}{$variant}) {
+				push @marks,$sample2gt_anno{$sample}{$variant};
+			}
+			else {
+				push @marks,0;
+			}
+		}
+		print OUT join("\t",@marks),"\n";
+	}
+	close OUT;
+
+
+	#AD, nofilter, NR
+	print STDERR "Writing $ad_nr_summary\n";
+	print LOG "Writing $ad_nr_summary\n";
+
+	open(OUT,">$ad_nr_summary") || die $!;
+	print OUT "Variant\t",join("\t",sort keys %samples),"\n";
+	foreach my $variant (sort keys %varids) {
+		print OUT $variant,"\t";
+		my @marks;
+		
+		foreach my $sample (sort keys %samples) {
+			if(defined $sample2ad_nr{$sample}{$variant}) {
+				push @marks,$sample2ad_nr{$sample}{$variant};
+			}
+			else {
+				push @marks,0;
+			}
+		}
+		print OUT join("\t",@marks),"\n";
+	}
+	close OUT;
+
+	#AD, nofilter, anno
+	print STDERR "Writing $ad_anno_summary\n";
+	print LOG "Writing $ad_anno_summary\n";
+
+	open(OUT,">$ad_anno_summary") || die $!;
+	print OUT "Variant\t",join("\t",sort keys %samples),"\n";
+	foreach my $variant (sort keys %varidannos) {
+		print OUT $variant,"\t";
+		my @marks;
+		
+		foreach my $sample (sort keys %samples) {
+			if(defined $sample2ad_anno{$sample}{$variant}) {
+				push @marks,$sample2ad_anno{$sample}{$variant};
+			}
+			else {
+				push @marks,0;
+			}
+		}
+		print OUT join("\t",@marks),"\n";
+	}
+	close OUT;
+
+}
 
 
 
