@@ -71,16 +71,16 @@ Parameters:
 	
     For each task, there are two ways of specifying the computing resource,
       but you can't mix --nodes and --ncpus together.
-	A) by specifying number of nodes and process
+	A) by specifying number of nodes and process (default)
     --nodes           The value can be A) No. of nodes for each task
                                        B) Name of the node, e.g. n001.cluster.com                        
     --ppn             No. of processes for each task. By default [4]
+                         Default for rnaseq-process
 	
-	B) by specifying the total number of cpus (default)
+	B) by specifying the total number of cpus
     --ncpus           No. of cpus for each task for tasks can't use multiple nodes
-                           Default for rnaseq-process
+                           
 						   
-
 								   
 ";
 

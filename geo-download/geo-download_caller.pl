@@ -4,7 +4,7 @@ use strict;
 use Getopt::Long;
 use Cwd qw(abs_path);
 use File::Basename qw(basename);
-use Text::CSV;
+use Text::CSV_XS;
 
 #CutAdapt+FASTQC+RSEM+STAR
 
@@ -15,11 +15,12 @@ use Text::CSV;
 ########
 
 
-my $version="0.31";
+my $version="0.32";
 
 #v0.2, Fastq files for PE
 #v0.3, change to fasterq-dump
 #v0.31, able to read zipped file
+#v0.32, solved binary chars
 
 my $usage="
 
@@ -121,11 +122,12 @@ my %gsm2sra; #gsm may have multiple sras
 
 open(IN,$srafile) || die "ERROR:Can't read $srafile.\n\n";
 
-my $csv=Text::CSV->new({ sep_char => ',' });
+my $csv=Text::CSV_XS->new({ sep_char => ',',
+							binary=>1});
 
 while(<IN>) {
 	tr/\r\n//d;
-	
+
 	if($csv->parse($_)) {
 		my @array=$csv->fields();
 	
@@ -147,6 +149,8 @@ while(<IN>) {
 		}
 	}
 	else {
+		my ($cde, $str, $pos) = $csv->error_diag ();
+		print "$cde, $str, $pos\n";	
 		warn "Line could not be parsed: $_\n";
 	}
 }
