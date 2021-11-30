@@ -12,7 +12,7 @@ use File::Basename qw(basename dirname);
 ########
 
 
-my $version="0.63";
+my $version="0.64";
 
 #0.2b change ensembl to UCSC format
 #0.2c add bw generation
@@ -31,6 +31,8 @@ my $version="0.63";
 #v0.61 remove fastq file after star
 #v0.62 change default number of tasks to number of samples
 #v0.63 compress unmapped files
+#v0.64 log file for fastqc
+
 
 my $usage="
 
@@ -512,8 +514,9 @@ if(defined $configattrs{"FASTQ2"}) {
 	
 	foreach my $sample (sort keys %sample2fastq) {
 		my $samplefolder="$outputfolder/$sample";
+		my $fastqclog="$samplefolder/$sample\_fastqc.log";
 		
-		$sample2workflow{$sample}.="$fastqc --nogroup -o $samplefolder -f fastq ".$sample2fastq{$sample}[2]." ".$sample2fastq{$sample}[3].";";
+		$sample2workflow{$sample}.="$fastqc --nogroup -o $samplefolder -f fastq ".$sample2fastq{$sample}[2]." ".$sample2fastq{$sample}[3]." > $fastqclog 2>&1;";
 	}
 }
 else {
@@ -523,8 +526,9 @@ else {
 	
 	foreach my $sample (sort keys %sample2fastq) {
 		my $samplefolder="$outputfolder/$sample";
+		my $fastqclog="$samplefolder/$sample\_fastqc.log";
 		
-		$sample2workflow{$sample}.="$fastqc --nogroup -o $samplefolder -f fastq ".$sample2fastq{$sample}[1].";";
+		$sample2workflow{$sample}.="$fastqc --nogroup -o $samplefolder -f fastq ".$sample2fastq{$sample}[1]." > $fastqclog 2>&1;";
 	}
 }	
 		

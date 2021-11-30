@@ -12,7 +12,7 @@ use File::Basename qw(basename dirname);
 ########
 
 
-my $version="0.6";
+my $version="0.61";
 
 #v0.2, add filter function to get files for PCA
 #v0.3, removed -v, add -r implementation for local
@@ -24,6 +24,7 @@ my $version="0.6";
 #v0.5, add expr-qc
 #v0.51, --group for expr-qc
 #v0.6, updated to AWS and v88
+#v0.61, log for expr-qc
 
 my $usage="
 
@@ -521,7 +522,7 @@ print S2 "$Rscript $count2cpm --count $outputfolder/$genecountmerged_filtered --
 
 #Expr-qc
 
-print S2 "$Rscript $expr_qc --input $outputfolder/$genetpmmerged_filtered --config $configfile --geneanno $outputfolder/geneanno.txt --out $outputfolder/expr-qc --group $group;";
+print S2 "$Rscript $expr_qc --input $outputfolder/$genetpmmerged_filtered --config $configfile --geneanno $outputfolder/geneanno.txt --out $outputfolder/expr-qc --group $group > $outputfolder/expr_qc_log.txt 2>&1;";
 
 print S2 "\n";
 
