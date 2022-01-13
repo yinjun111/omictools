@@ -1,9 +1,10 @@
 #!/bin/sh
 
-version="1.1"
+version="1.11"
 
 
 #v1.1 add samtools index
+#v1.11 print arguments
 
 #######
 #Usage
@@ -98,6 +99,9 @@ if [ -f "$fastafile" ] || [ -f "$gtffile" ];then
 	logfile=$outfolder/gtf-build_run.log
 	
 	printf "gtf-build version $version running.\n" > $logfile
+	
+	echo $@ >> $logfile
+	
 	date >> $logfile
 	
 else

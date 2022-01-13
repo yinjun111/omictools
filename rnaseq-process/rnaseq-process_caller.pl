@@ -12,7 +12,7 @@ use File::Basename qw(basename dirname);
 ########
 
 
-my $version="0.65";
+my $version="0.7";
 
 #0.2b change ensembl to UCSC format
 #0.2c add bw generation
@@ -33,6 +33,7 @@ my $version="0.65";
 #v0.63 compress unmapped files
 #v0.64 log file for fastqc
 #v0.65 fastqc -t 16
+#v0.7, add rat annotation
 
 
 my $usage="
@@ -51,10 +52,10 @@ Parameters:
                            Controled headers include:
                                fastq1,fastq2 columns for fastqs
                                index for sample index used for folder names
-    --output|-o       Output folder
+    --output|-o       Output folder [01.Process]
 
     --tx|-t           Transcriptome
-                        Current support Human.B38.Ensembl88, Mouse.B38.Ensembl88
+                        Currently support Human.B38.Ensembl88,Mouse.B38.Ensembl88,Rat.Rn6.Ensembl88
 
     --bamcoverage     Produce bw file for bam files [F]
     --keepfastq       Keep Cutadapt trimmed Fastq [F]	
@@ -105,7 +106,7 @@ my $params=join(" ",@ARGV);
 
 
 my $configfile;
-my $outputfolder;
+my $outputfolder="01.Process";
 my $verbose=1;
 my $tx;
 my $runbamcoverage="F";
@@ -243,7 +244,15 @@ my %tx2ref=(
 		"gtf"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc.gtf",
 		"homeranno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_homeranno.txt",
 		"geneanno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_gene_annocombo.txt",
-		"txanno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_tx_annocombo.txt"}
+		"txanno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_tx_annocombo.txt"},
+	"Rat.Rn6.Ensembl88"=>{ 
+		"star"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rat.Rn6.Ensembl88_STAR",
+		"rsem"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rat.Rn6.Ensembl88_STAR/Rat_RSEM",
+		"chrsize"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rat.Rn6.Ensembl88_STAR/chrNameLength.txt",
+		"fasta"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rattus_norvegicus.Rnor_6.0.dna.toplevel_ucsc.fa",
+		"gtf"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rattus_norvegicus.Rnor_6.0.88_ucsc.gtf",
+		"geneanno"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rattus_norvegicus.Rnor_6.0.88_ucsc_gene_annocombo.txt",
+		"txanno"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rattus_norvegicus.Rnor_6.0.88_ucsc_tx_annocombo.txt"}		
 );
 
 

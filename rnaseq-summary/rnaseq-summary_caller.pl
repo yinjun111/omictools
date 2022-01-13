@@ -11,7 +11,7 @@ use List::Util qw(sum);
 ########
 
 
-my $version="0.74";
+my $version="0.8";
 
 #v0.1b, changed DE match pattern
 #v0.1c, add first line recognition in DE results
@@ -31,7 +31,7 @@ my $version="0.74";
 #v0.72, add --comparisons
 #v0.73, keep --comparisons order. Foldername renamed for multiple inputfolders
 #v0.74, fix wrong merge folder not sample bug
-
+#v0.8, add rat annotation, change default I/O names
 
 my $usage="
 
@@ -50,8 +50,8 @@ Description: Summarize rnaseq-de results and recalculate significance if needed
 
 Parameters:
 
-    --in|-i           Input rnaseq-de folder(s)
-    --output|-o       Output folder
+    --in|-i           Input rnaseq-de folder(s) [03.DE]
+    --output|-o       Output folder [04.Summary]
 
     --comparisons     (Optional) Name of comparisons to be included in the summary
                             The order of comparison names are kept in output.
@@ -61,7 +61,7 @@ Parameters:
                            first column as sample name.
     --group|-g        Group name in config file for avg calculation
 
-    --rnaseq-merge|-m rnaseq-merge folder to retrieve TPM/FPKM data
+    --rnaseq-merge|-m rnaseq-merge folder to retrieve TPM/FPKM data [02.Merge]
 
     --gi              use selected gene list to summarize results	
     --ti              use selected tx list to summarize results
@@ -70,7 +70,7 @@ Parameters:
     --qcutoff         Corrected P cutoff, optional
 	
     --tx|-t           Transcriptome
-                        Current support Human.B38.Ensembl88, Mouse.B38.Ensembl88
+                        Currently support Human.B38.Ensembl88,Mouse.B38.Ensembl88,Rat.Rn6.Ensembl88
 
     --run_rnaseq-motif  Whether to run omictools rnaseq-motif, only generate script by default [none]
                         use \"cluster\" to run in HPC
@@ -103,12 +103,12 @@ my $params=join(" ",@ARGV);
 ########
 
 my $samples;
-my $inputfolders;
-my $outputfolder;
+my $inputfolders="03.DE";
+my $outputfolder="04.Summary";
 my $comparisons;
 my $configfile;
 my $group;
-my $rnaseqmerge;
+my $rnaseqmerge="02.Merge";
 my $fccutoff;
 my $qcutoff;
 my $geneinput;
@@ -256,7 +256,15 @@ my %tx2ref=(
 		"gtf"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc.gtf",
 		"homeranno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_homeranno.txt",
 		"geneanno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_gene_annocombo.txt",
-		"txanno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_tx_annocombo.txt"}
+		"txanno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_tx_annocombo.txt"},
+	"Rat.Rn6.Ensembl88"=>{ 
+		"star"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rat.Rn6.Ensembl88_STAR",
+		"rsem"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rat.Rn6.Ensembl88_STAR/Rat_RSEM",
+		"chrsize"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rat.Rn6.Ensembl88_STAR/chrNameLength.txt",
+		"fasta"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rattus_norvegicus.Rnor_6.0.dna.toplevel_ucsc.fa",
+		"gtf"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rattus_norvegicus.Rnor_6.0.88_ucsc.gtf",
+		"geneanno"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rattus_norvegicus.Rnor_6.0.88_ucsc_gene_annocombo.txt",
+		"txanno"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rattus_norvegicus.Rnor_6.0.88_ucsc_tx_annocombo.txt"}		
 );
 
 

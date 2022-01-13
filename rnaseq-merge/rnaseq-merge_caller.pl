@@ -12,7 +12,7 @@ use File::Basename qw(basename dirname);
 ########
 
 
-my $version="0.61";
+my $version="0.7";
 
 #v0.2, add filter function to get files for PCA
 #v0.3, removed -v, add -r implementation for local
@@ -25,6 +25,8 @@ my $version="0.61";
 #v0.51, --group for expr-qc
 #v0.6, updated to AWS and v88
 #v0.61, log for expr-qc
+#v0.7, add rat annotation, change default I/O names
+
 
 my $usage="
 
@@ -36,17 +38,17 @@ Description: Merge rnaseq-process folder to get summarized QC, count, TPM etc.
 
 Parameters:
 
-    --in|-i           Input folder(s), separated by \",\"
+    --in|-i           Input folder(s), separated by \",\" [01.Process]
 	
 	#two ways of retrieving samples, either by names or by config files
     --samples|-s      Samples
     --config|-c       Configuration file
 
-    --output|-o       Output folder
+    --output|-o       Output folder [02.Merge]
 
 
     --tx|-t           Transcriptome
-                        Current support Human.B38.Ensembl88, Mouse.B38.Ensembl88
+                        Currently support Human.B38.Ensembl88,Mouse.B38.Ensembl88,Rat.Rn6.Ensembl88
 
     --group|-g        Group name in config file for expr-qc plots [Group]
 
@@ -84,10 +86,10 @@ my $params=join(" ",@ARGV);
 ########
 
 my $samples;
-my $inputfolders;
+my $inputfolders="01.Process";
 
 my $configfile;
-my $outputfolder;
+my $outputfolder="02.Merge";
 my $verbose=1;
 my $tx;
 my $group="Group";
@@ -239,7 +241,15 @@ my %tx2ref=(
 		"gtf"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc.gtf",
 		"homeranno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_homeranno.txt",
 		"geneanno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_gene_annocombo.txt",
-		"txanno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_tx_annocombo.txt"}
+		"txanno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_tx_annocombo.txt"},
+	"Rat.Rn6.Ensembl88"=>{ 
+		"star"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rat.Rn6.Ensembl88_STAR",
+		"rsem"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rat.Rn6.Ensembl88_STAR/Rat_RSEM",
+		"chrsize"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rat.Rn6.Ensembl88_STAR/chrNameLength.txt",
+		"fasta"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rattus_norvegicus.Rnor_6.0.dna.toplevel_ucsc.fa",
+		"gtf"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rattus_norvegicus.Rnor_6.0.88_ucsc.gtf",
+		"geneanno"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rattus_norvegicus.Rnor_6.0.88_ucsc_gene_annocombo.txt",
+		"txanno"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rattus_norvegicus.Rnor_6.0.88_ucsc_tx_annocombo.txt"}
 );
 
 

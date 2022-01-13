@@ -11,7 +11,7 @@ use File::Basename qw(basename dirname);
 ########
 
 
-my $version="0.81";
+my $version="0.9";
 
 #version 0.2a, add r version log
 #v0.3 add runmode
@@ -24,6 +24,7 @@ my $version="0.81";
 #v0.7, v88 and AWS
 #v0.8, support complicated GLM
 #v0.81, add idf and cc options
+#v0.9, add rat annotation, change default I/O names
 
 
 my $usage="
@@ -36,9 +37,9 @@ Description: Differential Expression (DE) tests using DESeq2. This script works 
 
 
 Mandatory Parameters:
-    --in|-i           Input folder from rnaseq-merge
+    --in|-i           Input folder from rnaseq-merge [02.Merge]
 
-    --output|-o       Output folder
+    --output|-o       Output folder [03.DE]
                          Changes since v0.5. If your output folder in -o DE/,
                          the comparison results will be save in DE/treatment_vs_reference folder
 
@@ -46,7 +47,7 @@ Mandatory Parameters:
                            first column as sample name.
 
     --tx|-t           Transcriptome
-                        Current support Human.B38.Ensembl88, Mouse.B38.Ensembl88
+                        Currently support Human.B38.Ensembl88,Mouse.B38.Ensembl88,Rat.Rn6.Ensembl88
 
     --formula|-f      Formula for GLM, e.g. ~Group.
                           the last factor of the formula is used for comparison
@@ -126,9 +127,9 @@ my $params=join(" ",@ARGV);
 #Parameters
 ########
 	
-my $inputfolder;	
+my $inputfolder="02.Merge";	
 my $configfile;
-my $outputfolder;
+my $outputfolder="03.DE";
 
 my $formula;
 my $comparisons;
@@ -318,7 +319,15 @@ my %tx2ref=(
 		"gtf"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc.gtf",
 		"homeranno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_homeranno.txt",
 		"geneanno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_gene_annocombo.txt",
-		"txanno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_tx_annocombo.txt"}
+		"txanno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_tx_annocombo.txt"},
+	"Rat.Rn6.Ensembl88"=>{ 
+		"star"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rat.Rn6.Ensembl88_STAR",
+		"rsem"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rat.Rn6.Ensembl88_STAR/Rat_RSEM",
+		"chrsize"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rat.Rn6.Ensembl88_STAR/chrNameLength.txt",
+		"fasta"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rattus_norvegicus.Rnor_6.0.dna.toplevel_ucsc.fa",
+		"gtf"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rattus_norvegicus.Rnor_6.0.88_ucsc.gtf",
+		"geneanno"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rattus_norvegicus.Rnor_6.0.88_ucsc_gene_annocombo.txt",
+		"txanno"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rattus_norvegicus.Rnor_6.0.88_ucsc_tx_annocombo.txt"}		
 );
 
 

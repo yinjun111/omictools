@@ -4,12 +4,12 @@ use Getopt::Long;
 use File::Basename;
 use Cwd qw(abs_path);
 
-my $version="0.13";
+my $version="0.14";
 
 #v0.11, human & mouse annotation added
 #v0.12, rnaseq-var by GATK3 is added
 #v0.13, some code cleaning, and add prepare-merge
-
+#v0.14, add rat annotation, changed default i/o folders
 
 my $usage="
 
