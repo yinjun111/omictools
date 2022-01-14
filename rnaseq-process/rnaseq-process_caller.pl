@@ -12,7 +12,7 @@ use File::Basename qw(basename dirname);
 ########
 
 
-my $version="0.7";
+my $version="0.71";
 
 #0.2b change ensembl to UCSC format
 #0.2c add bw generation
@@ -34,6 +34,7 @@ my $version="0.7";
 #v0.64 log file for fastqc
 #v0.65 fastqc -t 16
 #v0.7, add rat annotation, change default I/O names
+#v0.71, smartseq tag
 
 
 my $usage="
@@ -59,6 +60,9 @@ Parameters:
 
     --bamcoverage     Produce bw file for bam files [F]
     --keepfastq       Keep Cutadapt trimmed Fastq [F]	
+
+    --smartseq        Use this tag for smartseq adapter removal
+
 	
     --runmode|-r      Where to run the scripts, local, cluster or none [none]
                             local is to run locally using \"parallel\", recommended for Falco
@@ -111,6 +115,7 @@ my $verbose=1;
 my $tx;
 my $runbamcoverage="F";
 my $keepfastq="F";
+my $smartseq=0;
 my $mem="40gb";
 my $runmode="none";
 my $task;
@@ -135,6 +140,7 @@ GetOptions(
 	"ncpus=s" => \$ncpus,
 	"ppn=s" => \$ppn,
 	"nodes=s" => \$nodes,
+	"smartseq"=> \$smartseq,
 	"verbose|v" => \$verbose,
 	"dev" => \$dev,		
 );
@@ -472,7 +478,20 @@ if(defined $configattrs{"FASTQ2"}) {
 		#add poly-A/T trimming, used shorter -A adapter trimming
 		#$sample2workflow{$sample}.="$cutadapt -j 4 -m 20 --interleaved -a AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC -A AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT $fastq1 $fastq2 | $cutadapt --interleaved -j 4 -m 20 -a \"A{100}\" -A \"A{100}\" - | $cutadapt --interleaved -j 4 -m 20 -a \"T{100}\" -A \"T{100}\" - -o $fastq1trim -p $fastq2trim >> $cutadaptlog 2>&1;";
 		
-		$sample2workflow{$sample}.="$cutadapt -j $threads -m 20 --interleaved -a AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC -A AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT $fastq1 $fastq2 2>>$cutadaptlog | $cutadapt --interleaved -j $threads -m 20 -a \"A{100}\" -A \"A{100}\" - 2>>$cutadaptlog | $cutadapt --interleaved -j $threads -m 20 -a \"T{100}\" -A \"T{100}\" - -o $fastq1trim -p $fastq2trim 1>>$cutadaptlog;";
+		unless($smartseq) {
+			$sample2workflow{$sample}.="$cutadapt -j $threads -m 20 --interleaved -a AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC -A AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT $fastq1 $fastq2 2>>$cutadaptlog | $cutadapt --interleaved -j $threads -m 20 -a \"A{100}\" -A \"A{100}\" - 2>>$cutadaptlog | $cutadapt --interleaved -j $threads -m 20 -a \"T{100}\" -A \"T{100}\" - -o $fastq1trim -p $fastq2trim 1>>$cutadaptlog;";
+		}
+		else {
+		
+			#Trim Nextera Transposase Sequence
+			
+			#ATAC-SEq
+			#-a GATCGGAAGAGCACACGTCTGAACTCCAGTCAC -b CTGTCTCTTATACACATCT -b AGATGTGTATAAGAGACAG -A GATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT -B CTGTCTCTTATACACATCT -B AGATGTGTATAAGAGACAG		
+
+			$sample2workflow{$sample}.="$cutadapt -j $threads -m 20 --interleaved -a AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC -A AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT -b CTGTCTCTTATACACATCT -b AGATGTGTATAAGAGACAG -B CTGTCTCTTATACACATCT -B AGATGTGTATAAGAGACAG $fastq1 $fastq2 2>>$cutadaptlog | $cutadapt --interleaved -j $threads -m 20 -a \"A{100}\" -A \"A{100}\" - 2>>$cutadaptlog | $cutadapt --interleaved -j $threads -m 20 -a \"T{100}\" -A \"T{100}\" - -o $fastq1trim -p $fastq2trim 1>>$cutadaptlog;";		
+		}
+		
+		
 		
 		if($keepfastq eq "F") {
 			$tempfiles2rm{$sample}{$fastq1trim}++;
