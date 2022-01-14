@@ -229,7 +229,7 @@ unless(defined $outputfolder && length($outputfolder)>0 ) {
 	exit;
 }
 
-if(!-e $outputfolder) {
+if(!-d $outputfolder) {
 	mkdir($outputfolder);
 }
 
@@ -237,7 +237,7 @@ $outputfolder = abs_path($outputfolder);
 
 my $scriptfolder="$outputfolder/scripts";
 
-if(!-e $scriptfolder) {
+if(!-d $scriptfolder) {
 	mkdir($scriptfolder);
 }
 
@@ -451,7 +451,7 @@ for(my $compnum=0;$compnum<@trts;$compnum++) {
 
 	my $outputfolder_de="$outputfolder/$trt\_vs\_$ref";
 
-	if(!-e $outputfolder_de) {
+	if(!-d $outputfolder_de) {
 		mkdir($outputfolder_de);
 	}
 

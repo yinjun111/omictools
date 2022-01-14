@@ -185,7 +185,7 @@ my $zip=find_program("/apps/zip30/zip");
 
 #Create folders
 
-if(!-e $outputfolder) {
+if(!-d $outputfolder) {
 	mkdir($outputfolder);
 }
 
@@ -194,28 +194,28 @@ my $outputfoldername = basename($outputfolder);
 
 
 #folders for gs analysis
-if(!-e "$outputfolder/forIPA") {
+if(!-d "$outputfolder/forIPA") {
 	mkdir("$outputfolder/forIPA");
 }
 
-if(!-e "$outputfolder/forMetascape") {
+if(!-d "$outputfolder/forMetascape") {
 	mkdir("$outputfolder/forMetascape");
 }
 
 my $gsea_gen_run="$outputfolder/forGSEA/gsea-gen_cluster_run.sh";
-if(!-e "$outputfolder/forGSEA") {
+if(!-d "$outputfolder/forGSEA") {
 	mkdir("$outputfolder/forGSEA");
 }
 
 
-if(!-e "$outputfolder/for_rnaseq-motif/") {
+if(!-d "$outputfolder/for_rnaseq-motif/") {
 	mkdir("$outputfolder/for_rnaseq-motif/");
 }
 
 
 my $scriptfolder="$outputfolder/scripts";
 
-if(!-e $scriptfolder) {
+if(!-d $scriptfolder) {
 	mkdir($scriptfolder);
 }
 

@@ -27,7 +27,6 @@ my $version="0.7";
 #v0.61, log for expr-qc
 #v0.7, add rat annotation, change default I/O names
 
-
 my $usage="
 
 rnaseq-merge
@@ -174,7 +173,7 @@ unless(defined $outputfolder && length($outputfolder)>0 ) {
 	exit;
 }
 
-if(!-e $outputfolder) {
+if(!-d $outputfolder) {
 	mkdir($outputfolder);
 }
 
@@ -184,11 +183,11 @@ $outputfolder = abs_path($outputfolder);
 my $scriptfolder="$outputfolder/scripts";
 my $tempfolder="$outputfolder/temp";
 
-if(!-e $scriptfolder) {
+if(!-d $scriptfolder) {
 	mkdir($scriptfolder);
 }
 
-if(!-e $tempfolder) {
+if(!-d $tempfolder) {
 	mkdir($tempfolder);
 }
 
