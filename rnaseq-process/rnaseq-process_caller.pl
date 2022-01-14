@@ -33,7 +33,7 @@ my $version="0.7";
 #v0.63 compress unmapped files
 #v0.64 log file for fastqc
 #v0.65 fastqc -t 16
-#v0.7, add rat annotation
+#v0.7, add rat annotation, change default I/O names
 
 
 my $usage="
@@ -179,7 +179,7 @@ unless(defined $outputfolder && length($outputfolder)>0 ) {
 	exit;
 }
 
-if(!-e $outputfolder) {
+if(!-d $outputfolder) {
 	mkdir($outputfolder);
 }
 
@@ -187,7 +187,7 @@ $outputfolder = abs_path($outputfolder);
 
 my $scriptfolder="$outputfolder/scripts";
 
-if(!-e $scriptfolder) {
+if(!-d $scriptfolder) {
 	mkdir($scriptfolder);
 }
 
@@ -427,7 +427,7 @@ print LOG "Make folders for different samples.\n\n";
 
 foreach my $sample (sort keys %sample2fastq) {
 	my $samplefolder="$outputfolder/$sample"; #edited to enable space in folder name
-	if(!-e	$samplefolder) {
+	if(!-d	$samplefolder) {
 		mkdir $samplefolder;
 	}
 }
