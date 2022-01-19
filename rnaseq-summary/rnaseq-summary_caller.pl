@@ -11,7 +11,7 @@ use List::Util qw(sum);
 ########
 
 
-my $version="0.8";
+my $version="0.81";
 
 #v0.1b, changed DE match pattern
 #v0.1c, add first line recognition in DE results
@@ -32,6 +32,7 @@ my $version="0.8";
 #v0.73, keep --comparisons order. Foldername renamed for multiple inputfolders
 #v0.74, fix wrong merge folder not sample bug
 #v0.8, add rat annotation, change default I/O names
+#v0.81, fix argument for GSEA
 
 my $usage="
 
@@ -75,9 +76,10 @@ Parameters:
     --run_rnaseq-motif  Whether to run omictools rnaseq-motif, only generate script by default [none]
                         use \"cluster\" to run in HPC
 
-    --run_gsea-gen      Whether to run omictools gsea-gen, run by default [none]
-                        use \"none\" to turn off
-
+    --run_gsea-gen      Whether to run omictools gsea-gen, not run by default [none]
+                        use \"none\" to turn off.
+                        use \"cluster\" to run GSEA
+						
     --gseadbs           Default dbs to run are [h.all.v7.4,c5.bp.v7.4]
                         Other popular dbs include c2.cp.kegg.v7.4,c3.tft.v7.4,c5.cc.v7.4,c5.mf.v7.4
 	
