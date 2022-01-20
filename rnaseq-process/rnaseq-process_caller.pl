@@ -528,8 +528,7 @@ else {
 			$sample2workflow{$sample}.="$cutadapt -j $threads -a AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC $fastq1 2>>$cutadaptlog | $cutadapt -j $threads -a \"A{100}\" - 2>>$cutadaptlog | $cutadapt -j $threads -m 20 -a \"T{100}\" - -o $fastq1trim 1>>$cutadaptlog;";
 		}
 		else {
-			$sample2workflow{$sample}.="$cutadapt -j $threads -m 20 -a AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC -b CTGTCTCTTATACACATCT -b AGATGTGTATAAGAGACAG $fastq1 2>>$cutadaptlog | $cutadapt -j $threads -a \"A{100}\" - 2>>$cutadaptlog | $cutadapt -j $threads -m 20 -a \"T{100}\" - -o $fastq1trim 1>>$cutadaptlog;";				
-		
+			$sample2workflow{$sample}.="$cutadapt -j $threads -m 20 -a AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC -b CTGTCTCTTATACACATCT -b AGATGTGTATAAGAGACAG $fastq1 2>>$cutadaptlog | $cutadapt -j $threads -a \"A{100}\" - 2>>$cutadaptlog | $cutadapt -j $threads -m 20 -a \"T{100}\" - -o $fastq1trim 1>>$cutadaptlog;";
 		}
 		
 		if($keepfastq eq "F") {
