@@ -10,7 +10,7 @@ library(argparser,quietly =T)
 #Version
 ####
 
-version="0.63"
+version="0.64"
 
 #0.2b, change auto filter to *5. Add indfilter and cookscutoff option
 #0.23, add write_table_proper
@@ -23,6 +23,7 @@ version="0.63"
 #0.61, minor changes for read.table
 #0.62, remove model matrix empty columns
 #0.63, change library calling lcoations
+#0.64, fix bug for group names starting with numbers
 
 description=paste0("de_test\nversion ",version,"\n","Usage:\nDescription: Differential Expression calculation using DESeq2\n")
 
@@ -120,9 +121,13 @@ deseq2_test <- function(mat,anno,design,fc_cutoff=1,q_cutoff=0.05,pmethod="Wald"
 	design.vars<-gsub("~","",design)
 	design.vars<-unlist(strsplit(design.vars,"\\+"))
 	
+	#change treat and ref names
+	treat.m=make.names(treat)
+	ref.m=make.names(ref)
+	
 	#anno relevel column for last variable #only works for 1vs1 for the selected col
 	#convert to factor
-	anno[,design.vars[length(design.vars)]]<-factor(anno[,design.vars[length(design.vars)]],levels=c(ref,treat))
+	anno[,design.vars[length(design.vars)]]<-factor(make.names(anno[,design.vars[length(design.vars)]]),levels=c(ref.m,treat.m))
 	
 	#convert to model matrix
 	design.mm<-model.matrix(as.formula(design),anno)	
@@ -134,7 +139,7 @@ deseq2_test <- function(mat,anno,design,fc_cutoff=1,q_cutoff=0.05,pmethod="Wald"
 	dds <- DESeqDataSetFromMatrix(countData = round(mat),
 	                              colData = anno,
 	                              design= design.mm)
-	contrast<-paste0(design.vars[length(design.vars)],make.names(treat))
+	contrast<-paste0(design.vars[length(design.vars)],treat.m)
 	
 	#perform test
 	dds <- DESeq(dds,test=pmethod)
