@@ -16,11 +16,12 @@ use File::Basename qw(basename dirname);
 ########
 
 
-my $version="0.2";
+my $version="0.3";
 
 #v1.0a, perform GSEA analysis after cls and gct are generated.
 #v1.1 versioning
 #v0.2, AWS
+#v0.3, update to make it work standalone
 
 my $usage="
 gseagen

@@ -12,7 +12,7 @@ use File::Basename qw(basename dirname);
 ########
 
 
-my $version="0.72";
+my $version="0.8";
 
 #0.2b change ensembl to UCSC format
 #0.2c add bw generation
@@ -35,8 +35,7 @@ my $version="0.72";
 #v0.65 fastqc -t 16
 #v0.7, add rat annotation, change default I/O names
 #v0.71, smartseq tag
-#v0.72, smartseq tag in SE
-
+#v0.8, add exon and exon junction count by subread
 
 my $usage="
 
@@ -59,6 +58,7 @@ Parameters:
     --tx|-t           Transcriptome
                         Currently support Human.B38.Ensembl88,Mouse.B38.Ensembl88,Rat.Rn6.Ensembl88
 
+    --as              Count reads for exon and exon junctions for alternative splicing [F]
     --bamcoverage     Produce bw file for bam files [F]
     --keepfastq       Keep Cutadapt trimmed Fastq [F]	
 
@@ -114,6 +114,7 @@ my $configfile;
 my $outputfolder="01.Process";
 my $verbose=1;
 my $tx;
+my $as="F";
 my $runbamcoverage="F";
 my $keepfastq="F";
 my $smartseq=0;
@@ -134,6 +135,7 @@ GetOptions(
 	"output|o=s" => \$outputfolder,
 	"tx|t=s" => \$tx,
 	"mem=s" => \$mem,
+	"as=s" => \$as,	
 	"bamcoverage=s" => \$runbamcoverage,	
 	"keepfastq=s" => \$keepfastq,	
 	"runmode|r=s" => \$runmode,		
@@ -175,7 +177,7 @@ my $rsem=find_program("/apps/RSEM-1.3.3/rsem-calculate-expression");
 my $star=find_program("/apps/STAR-2.7.8a/source/STAR"); #recompile
 my $bamcoverage=find_program("/apps/anaconda3/bin/bamCoverage");
 my $samtools=find_program("/apps/samtools-1.12/bin/samtools");
-
+my $featurecounts=find_program("/apps/subread-2.0.3-Linux-x86_64/bin/featureCounts");
 
 #######
 #Output folder
@@ -530,7 +532,7 @@ else {
 		else {
 			$sample2workflow{$sample}.="$cutadapt -j $threads -m 20 -a AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC -b CTGTCTCTTATACACATCT -b AGATGTGTATAAGAGACAG $fastq1 2>>$cutadaptlog | $cutadapt -j $threads -a \"A{100}\" - 2>>$cutadaptlog | $cutadapt -j $threads -m 20 -a \"T{100}\" - -o $fastq1trim 1>>$cutadaptlog;";
 		}
-		
+				
 		if($keepfastq eq "F") {
 			$tempfiles2rm{$sample}{$fastq1trim}++;
 		}
@@ -608,6 +610,12 @@ if(defined $configattrs{"FASTQ2"}) {
 		$sample2workflow{$sample}.="$rsem -p $threads --paired-end --bam $samplefolder/$sample\_Aligned.toTranscriptome.out.bam ".$tx2ref{$tx}{"rsem"}." $samplefolder/$sample > $rsemlog 2>&1;";
 		
 		$tempfiles2rm{$sample}{"$samplefolder/$sample.transcript.bam"}++;
+
+		#--as tag to use featureCounts
+		if($as eq "T") {
+			$sample2workflow{$sample}.="$featurecounts -p -O -J -T $threads -f -t exon -g exon_id -a ".$tx2ref{$tx}{"gtf"}." -o $samplefolder/$sample\_featurecounts_exon.txt $samplefolder/$sample\_Aligned.sortedByCoord.out.bam;";
+			#may need to add SI for tx, exon and exon junc ...
+		}
 		
 		if($runbamcoverage eq "T") {
 			$sample2workflow{$sample}.="$bamcoverage --numberOfProcessors $threads --bam $samplefolder/$sample\_Aligned.sortedByCoord.out.bam --normalizeUsing CPM --binSize 5 -o $samplefolder/$sample\_Aligned.sortedByCoord.out.bw;";
@@ -624,6 +632,7 @@ else {
 		my $samplefolder="$outputfolder/$sample";
 		my $starlog="$samplefolder/$sample\_star.log";
 		my $rsemlog="$samplefolder/$sample\_rsem.log";
+		my $featurecountslog="$samplefolder/$sample\_featurecounts.log";
 		
 		#$sample2workflow{$sample}.="$rsem -p 4 --output-genome-bam --sort-bam-by-coordinate --star-gzipped-read-file --star ".$sample2fastq{$sample}[1]." ".$tx2ref{$tx}." $samplefolder/$sample > $rsemlog 2>&1;";
 		
@@ -648,6 +657,12 @@ else {
 		$sample2workflow{$sample}.="$rsem -p $threads --bam $samplefolder/$sample\_Aligned.toTranscriptome.out.bam ".$tx2ref{$tx}{"rsem"}." $samplefolder/$sample > $rsemlog 2>&1;";
 		
 		$tempfiles2rm{$sample}{"$samplefolder/$sample.transcript.bam"}++;
+		
+		#--as tag to use featureCounts
+		if($as eq "T") {
+			$sample2workflow{$sample}.="$featurecounts -O -J -T $threads -f -t exon -g exon_id -a ".$tx2ref{$tx}{"gtf"}." -o $samplefolder/$sample\_featurecounts_exon.txt $samplefolder/$sample\_Aligned.sortedByCoord.out.bam;";
+			#may need to add SI for tx, exon and exon junc ...
+		}		
 		
 		if($runbamcoverage eq "T") {
 			$sample2workflow{$sample}.="$bamcoverage --numberOfProcessors $threads --bam $samplefolder/$sample\_Aligned.sortedByCoord.out.bam --normalizeUsing CPM --binSize 5 -o $samplefolder/$sample\_Aligned.sortedByCoord.out.bw;";
