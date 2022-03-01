@@ -11,7 +11,7 @@ use List::Util qw(sum);
 ########
 
 
-my $version="0.81";
+my $version="0.82";
 
 #v0.1b, changed DE match pattern
 #v0.1c, add first line recognition in DE results
@@ -33,6 +33,7 @@ my $version="0.81";
 #v0.74, fix wrong merge folder not sample bug
 #v0.8, add rat annotation, change default I/O names
 #v0.81, fix argument for GSEA
+#v0.82, fix app for GSEA
 
 my $usage="
 
@@ -168,8 +169,6 @@ if($dev) {
 my $mergefiles="$omictoolsfolder/mergefiles/mergefiles_caller.pl";
 my $text2excel="$omictoolsfolder/text2excel/text2excel.pl";
 my $metascape_gen="perl $omictoolsfolder/metascape-gen/metascape-gen_caller.pl";
-my $gsea_gen="perl $omictoolsfolder/gsea-gen/gsea-gen_caller.pl";
-my $gsea_gen_summary="perl $omictoolsfolder/gsea-gen-summary/gsea-gen-summary.pl".scalar(add_dev($dev));
 my $rnaseq_motif="perl $omictoolsfolder/rnaseq-motif/rnaseq-motif_caller.pl".scalar(add_dev($dev));
 my $rnaseq_motif_summary="perl $omictoolsfolder/rnaseq-motif-summary/rnaseq-motif-summary.pl";
 my $parallel_job="perl $omictoolsfolder/parallel-job/parallel-job_caller.pl"; 
@@ -178,6 +177,24 @@ my $rnaseqsummarynote="$omictoolsfolder/rnaseq-summary/rnaseq-summary_note.txt";
 
 
 my $zip=find_program("/apps/zip30/zip");
+
+
+
+my $gstoolsfolder="/apps/gstools/";
+
+#adding --dev switch for better development process
+if($dev) {
+#	$omictoolsfolder="/home/jyin/Projects/Pipeline/omictools/";
+#}
+#else {
+	#the tools called will be within the same folder of the script
+	$gstoolsfolder=get_parent_folder(abs_path(dirname($0)));
+}
+
+
+my $gsea_gen="perl $gstoolsfolder/gsea-gen/gsea-gen_caller.pl";
+my $gsea_gen_summary="perl $gstoolsfolder/gsea-gen/gsea-gen-summary.pl".scalar(add_dev($dev));
+
 
 
 
