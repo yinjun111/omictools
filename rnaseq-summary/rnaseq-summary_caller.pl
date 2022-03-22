@@ -82,8 +82,8 @@ Parameters:
                         use \"none\" to turn off.
                         use \"cluster\" to run GSEA
 						
-    --gseadbs           Default dbs to run are [h.all.v7.4,c5.bp.v7.4]
-                        Other popular dbs include c2.cp.kegg.v7.4,c3.tft.v7.4,c5.cc.v7.4,c5.mf.v7.4
+    --gseadbs           Default dbs to run are [c5.go.bp.v7.4,c2.cp.reactome.v7.4]
+                        Other popular dbs include c2.cp.kegg.v7.4,c3.tft.v7.4,c5.go.cc.v7.4,c5.go.mf.v7.4
 	
 ";
 
@@ -117,7 +117,7 @@ my $fccutoff;
 my $qcutoff;
 my $geneinput;
 my $txinput;
-my $gseadbs="h.all.v7.4,c5.go.bp.v7.4";
+my $gseadbs="c5.go.bp.v7.4,c2.cp.reactome.v7.4";
 my $runrnaseqmotif="none";
 my $rungseagen="none";
 my $verbose=1;
