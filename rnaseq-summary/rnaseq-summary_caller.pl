@@ -34,7 +34,7 @@ my $version="0.83";
 #v0.8, add rat annotation, change default I/O names
 #v0.81, fix argument for GSEA
 #v0.82, fix app for GSEA
-#v0.83, add FC0Q005
+#v0.83, add FC0Q005,changed default dbs for GSEA
 
 my $usage="
 
