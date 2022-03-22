@@ -11,7 +11,7 @@ use List::Util qw(sum);
 ########
 
 
-my $version="0.82";
+my $version="0.83";
 
 #v0.1b, changed DE match pattern
 #v0.1c, add first line recognition in DE results
@@ -34,6 +34,7 @@ my $version="0.82";
 #v0.8, add rat annotation, change default I/O names
 #v0.81, fix argument for GSEA
 #v0.82, fix app for GSEA
+#v0.83, add FC0Q005
 
 my $usage="
 
