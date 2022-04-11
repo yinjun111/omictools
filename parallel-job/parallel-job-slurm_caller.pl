@@ -3,7 +3,6 @@ use strict;
 use Getopt::Long;
 use Cwd qw(abs_path);
 use List::Util qw(min);
-use File::Basename qw(basename dirname);
 
 
 ########
@@ -50,7 +49,7 @@ Description: In HPC cluster, use multiple controled tasks for paralleling.
 
 Parameters:
 
-    --scheduler|-s    Job scheduler for HPC, slurm or torque [slurm]
+    --scheduler|-s    Job scheduler for HPC slurm or torque [slurm]
 
     --in|-i           shell script file(s) with one command per line
 
@@ -62,7 +61,7 @@ Parameters:
     --oo              Toruqe output message output directory. Default as folder of your input script
 
     Control the tasks submited to the cluster
-    --task|-t         No. of tasks submitted to cluster for each script file [10]
+    --task|-t         No. of tasks submitted to cluster for each script file[10]
 
     For each task, there are two ways of specifying the computing resource,
       but you can't mix --nodes and --ncpus together.
@@ -80,9 +79,9 @@ Parameters:
 
     --keep|-k         Keep compute nodes for specified time in seconds [none]
 	
+    --runmode|-r      
     --env|-e          Use your own runing envir, e.g. to source ~/.bashrc
 	
-    --runmode|-r      Submit the jobs to cluster. If -r is not specified, only write scripts.
 	
 ";
 
@@ -102,7 +101,6 @@ my $params=join(" ",@ARGV);
 #Parameters
 ########
 
-my $scheduler="slurm";
 my $infiles;
 my $nodes;
 my $ppn;
@@ -125,11 +123,7 @@ my $wo;
 my $eo;
 my $oo;
 
-my $dev=0; #developmental version
-
-
 GetOptions(
-	"scheduler|s=s" => \$scheduler,
 	"in|i=s" => \$infiles,
 	"name|n=s" => \$name,
 	"wo|o=s" => \$wo,
@@ -149,30 +143,13 @@ GetOptions(
 	"asis|a"=> \$asis,	
 	"env|e" => \$env,
 	"verbose" => \$verbose,
-	"help|h" => sub {print STDERR $usage;exit;},
-	"dev" => \$dev
+	"help|h" => sub {print STDERR $usage;exit;}
+	
 );
 
 
 my $logfile="parallel-job_run.log";
 my $submitscriptfile="parallel-job_submit.sh";
-
-
-########
-#Prerequisites
-########
-
-
-
-my $omictoolsfolder="/apps/omictools/";
-
-#adding --dev switch for better development process
-if($dev) {
-	#the tools called will be within the same folder of the script
-	$omictoolsfolder=get_parent_folder(abs_path(dirname($0)));
-}
-
-my $parallel_job="perl $omictoolsfolder/parallel-job/parallel-job_caller.pl";
 
 
 
@@ -184,8 +161,8 @@ my $parallel_job="perl $omictoolsfolder/parallel-job/parallel-job_caller.pl";
 
 my @userreals=getpwuid($<);
 my $user=$userreals[0];
-#my @userattrs=getpwnam($user);
-#my @groupattrs=getgrgid($userattrs[3]);
+my @userattrs=getpwnam($user);
+my @groupattrs=getgrgid($userattrs[3]);
 
 
 #print STDERR "\nWelcome $userattrs[6]($user) from $groupattrs[0] to HPC!\n";
@@ -206,7 +183,7 @@ if($keep ne "none") {
 	print OUT "sleep $keep;rm /data/tmp/keep_node.sh;rm -R /data/tmp/keep_node_submit";
 	close OUT;
 	
-	system("$parallel_job -i /data/tmp/keep_node.sh -o /data/tmp/keep_node_submit -r");
+	system("omictools parallel-job -i /data/tmp/keep_node.sh -o /data/tmp/keep_node_submit -r");
 
 	exit;
 }
@@ -427,65 +404,36 @@ for(my $filenum=0;$filenum<@infiles;$filenum++) {
 		#reassign node attr
 		$job_params->{"nodes"}=$node_selected;
 
-		if($scheduler eq "slurm") {
 		
-			#for Slurm
+		#write_qj_task($split_command_lines[$num],$commandline_script,$job_params);
+		write_slurm_qj_task($split_command_lines[$num],$commandline_script,$job_params);
 		
-			write_slurm_qj_task($split_command_lines[$num],$commandline_script,$job_params);
-	
-			unless($tandem) {
-				#print OUT "qsub $current_so/$commandline_script\n";
-				print OUT "sbatch $current_so/$commandline_script\n";
-			}
-			else {
-				#write qj task
-				#tandem submission controlled by -W depend=afterok:job1:job2:job3
-				
-				my $qjnamevar="$qjname\_".form_num($num+1,scalar(@split_command_lines));
-				
-				#remove special char from qjname variables
-				$qjnamevar=~s/\W/_/g;
-				
-				if(@previous_jobs) {
-					#print OUT $qjnamevar,"=\$(qsub -W depend=afterok:",join(":",map {"\$".$_} @previous_jobs)," $current_so/$commandline_script)\n";
-					print OUT $qjnamevar,"=\$(sbatch --parsable --dependency=afterok:",join(",",map {"\$".$_} @previous_jobs)," $current_so/$commandline_script)\n";
-				}
-				else {
-					#print OUT $qjnamevar,"=\$(qsub $current_so/$commandline_script)\n";				
-					print OUT $qjnamevar,"=\$(sbatch --parsable $current_so/$commandline_script)\n";				
-					
-				}
-				
-				push @current_jobs,$qjnamevar;
-				
-			}
+		#qsub cmd
+		unless($tandem) {
+			#print OUT "qsub $current_so/$commandline_script\n";
+			print OUT "sbatch $current_so/$commandline_script\n";
 		}
 		else {
-			#for Torque
+			#write qj task
+			#tandem submission controlled by -W depend=afterok:job1:job2:job3
 			
-			write_torque_qj_task($split_command_lines[$num],$commandline_script,$job_params);
-
-			unless($tandem) {
-				print OUT "qsub $current_so/$commandline_script\n";
+			my $qjnamevar="$qjname\_".form_num($num+1,scalar(@split_command_lines));
+			
+			#remove special char from qjname variables
+			$qjnamevar=~s/\W/_/g;
+			
+			if(@previous_jobs) {
+				#print OUT $qjnamevar,"=\$(qsub -W depend=afterok:",join(":",map {"\$".$_} @previous_jobs)," $current_so/$commandline_script)\n";
+				print OUT $qjnamevar,"=\$(sbatch --parsable --dependency=afterok:",join(",",map {"\$".$_} @previous_jobs)," $current_so/$commandline_script)\n";
 			}
 			else {
-				#write qj task
-				#tandem submission controlled by -W depend=afterok:job1:job2:job3
+				#print OUT $qjnamevar,"=\$(qsub $current_so/$commandline_script)\n";				
+				print OUT $qjnamevar,"=\$(sbatch --parsable $current_so/$commandline_script)\n";				
 				
-				my $qjnamevar="$qjname\_".form_num($num+1,scalar(@split_command_lines));
-				
-				#remove special char from qjname variables
-				$qjnamevar=~s/\W/_/g;
-				
-				if(@previous_jobs) {
-					print OUT $qjnamevar,"=\$(qsub -W depend=afterok:",join(":",map {"\$".$_} @previous_jobs)," $current_so/$commandline_script)\n";
-				}
-				else {
-					print OUT $qjnamevar,"=\$(qsub $current_so/$commandline_script)\n";									
-				}
-				
-				push @current_jobs,$qjnamevar;				
-			}			
+			}
+			
+			push @current_jobs,$qjnamevar;
+			
 		}
 	}
 	
@@ -648,85 +596,6 @@ print OUT2 "##########################################\n";
 	
 }
 
-sub write_torque_qj_task {
-	my ($command_line,$commandline_script,$params)=@_;
-	
-	#global var
-	#so,wo,eo,oo,mem,que,procs,env
-	
-	#return pbs file name
-	
-	#split every line
-	open(OUT2,">".$params->{"so"}."/$commandline_script") || die "Error writing ".$params->{"so"}."/$commandline_script";
-	print OUT2 "#!/bin/sh
-
-##specify which shell is used
-#PBS -S /bin/bash
-##job name
-#PBS -N $commandline_script\n";
-	
-#queue function skip for now. Only default queue implemented in Firefly
-#print OUT2 "## Queue name\n#PBS -q ",$params->{"que"},"\n";
-
-
-#computing resource setting
-
-if(defined $params->{"ppn"}) {
-	if(defined $params->{"nodes"}) {
-		print OUT2 "## Parallel environment to defind # of cores\n#PBS -l nodes=",$params->{"nodes"},":ppn=",$params->{"ppn"},"\n";
-	}
-	else {
-		print OUT2 "## Parallel environment to defind # of cores\n#PBS -l nodes=1:ppn=",$params->{"ppn"},"\n";
-	}
-}
-else {
-	if(defined $params->{"nodes"}) {
-		print OUT2 "## Parallel environment to defind # of cores\n#PBS -l nodes=",$params->{"nodes"},"\n";
-	}
-}
-
-if(defined $params->{"procs"}) {
-	print OUT2 "## Parallel environment to defind # of procs\n#PBS -l procs=",$params->{"procs"},"\n";
-}
-
-if(defined $params->{"ncpus"}) {
-	print OUT2 "## Parallel environment to defind # of cpus\n#PBS -l ncpus=",$params->{"ncpus"},"\n";
-}
-
-if(defined $params->{"mem"}) {
-	print OUT2 "#PBS -l mem=",$params->{"mem"},"\n"; 
-}
-
-#time limit
-print OUT2
-"## Set time limit
-#PBS -l walltime=1600:00:00\n";
-
-#work directory 
-#print OUT2 "## Set working directory\n#PBS -wd ",$params->{"wo"},"\n";
-
-print OUT2 "## Stdout and stderr log files\n";
-print OUT2 "#PBS -o ",$params->{"oo"},"/$commandline_script.out.txt\n";
-print OUT2 "#PBS -e ",$params->{"eo"},"/$commandline_script.err.txt\n";
-
-print OUT2 "##########################################\n";
-
-	if($params->{"env"}) {
-		print OUT2 "source ~/.bashrc\n";
-	}
-	
-	#set work directory
-	print OUT2 "cd ",$params->{"wo"},"\n\n";
-
-	print OUT2 $command_line,"\n";
-	
-	print OUT2 "##########################################\n";
-	close OUT2;
-	
-	return $params->{"so"}."/$commandline_script";
-	
-}
-
 
 sub form_num {
 	my ($num,$maxnum)=@_;
@@ -761,12 +630,4 @@ sub file_short_name {
 	return $filename_short;
 }
 
-
-sub get_parent_folder {
-	my $dir=shift @_;
-	
-	if($dir=~/^(.+\/)[^\/]+\/?/) {
-		return $1;
-	}
-}
 
