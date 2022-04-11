@@ -12,7 +12,7 @@ use File::Basename qw(basename dirname);
 ########
 
 
-my $version="0.8";
+my $version="0.81";
 
 #0.2b change ensembl to UCSC format
 #0.2c add bw generation
@@ -36,6 +36,7 @@ my $version="0.8";
 #v0.7, add rat annotation, change default I/O names
 #v0.71, smartseq tag
 #v0.8, add exon and exon junction count by subread
+#v0.81, change STAR location
 
 my $usage="
 
@@ -174,7 +175,8 @@ my $parallel_job="$omictoolsfolder/parallel-job/parallel-job_caller.pl";
 my $cutadapt=find_program("/apps/anaconda3/bin/cutadapt");
 my $fastqc=find_program("/apps/FastQC/fastqc");
 my $rsem=find_program("/apps/RSEM-1.3.3/rsem-calculate-expression");
-my $star=find_program("/apps/STAR-2.7.8a/source/STAR"); #recompile
+#my $star=find_program("/apps/STAR-2.7.8a/source/STAR"); #recompile
+my $star=find_program("/apps/STAR-2.7.8a/bin/Linux_x86_64/STAR");
 my $bamcoverage=find_program("/apps/anaconda3/bin/bamCoverage");
 my $samtools=find_program("/apps/samtools-1.12/bin/samtools");
 my $featurecounts=find_program("/apps/subread-2.0.3-Linux-x86_64/bin/featureCounts");
@@ -785,7 +787,7 @@ elsif($runmode eq "cluster") {
 	system("sh $scriptclusterrun");
 	print LOG "sh $scriptclusterrun;\n\n";
 
-	print STDERR "Starting cluster paralleled processing using $jobnumber tasks. To monitor process, use \"qstat\".\n\n";
+	print STDERR "Starting cluster paralleled processing using $jobnumber tasks. To monitor process, use \"squeue\".\n\n";
 
 }
 

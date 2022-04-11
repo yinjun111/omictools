@@ -12,7 +12,7 @@ use File::Basename qw(basename dirname);
 ########
 
 
-my $version="0.7";
+my $version="0.71";
 
 #v0.2, add filter function to get files for PCA
 #v0.3, removed -v, add -r implementation for local
@@ -26,6 +26,7 @@ my $version="0.7";
 #v0.6, updated to AWS and v88
 #v0.61, log for expr-qc
 #v0.7, add rat annotation, change default I/O names
+#v0.71, qstat to squeue
 
 my $usage="
 
@@ -627,7 +628,7 @@ elsif($runmode eq "cluster") {
 	system("sh $scriptclusterrun");
 	print LOG "sh $scriptclusterrun;\n\n";
 
-	print STDERR "Starting cluster paralleled processing using $jobnumber tasks. To monitor process, use \"qstat\".\n\n";
+	print STDERR "Starting cluster paralleled processing using $jobnumber tasks. To monitor process, use \"squeue\".\n\n";
 
 }
 

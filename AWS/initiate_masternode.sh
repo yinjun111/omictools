@@ -231,6 +231,14 @@ sudo chmod 777 /apps/snpEff
 java -jar /apps/snpEff/snpEff.jar download hg38
 java -jar /apps/snpEff/snpEff.jar download mm10
 
+#featureCounts
+cd /home/centos/Programs
+wget https://downloads.sourceforge.net/project/subread/subread-2.0.3/subread-2.0.3-Linux-x86_64.tar.gz --no-check-certificate
+tar xzvf subread-2.0.3-Linux-x86_64.tar.gz
+sudo cp -R subread-2.0.3-Linux-x86_64 /apps/
+
+
+
 #######
 #chown for some folders
 #######
