@@ -49,7 +49,7 @@ Mandatory Parameters:
     --tx|-t           Transcriptome
                         Currently support Human.B38.Ensembl88,Mouse.B38.Ensembl88,Rat.Rn6.Ensembl88
 
-    --formula|-f      Formula for GLM, e.g. ~Group.
+    --formula|-f      Formula for GLM [~Group]
                           the last factor of the formula is used for comparison
 
     #if you have multiple comparisons to perform in a project
@@ -81,12 +81,8 @@ Optional Parameters:
 
     --txde            Run DE tests for Tx [F]
 
-    --runmode|-r      Where to run the scripts, local, cluster or none [none]
-
-	#Parallel computing controls	
-    --task            Number of tasks to be paralleled. By default 5 tasks. [5]
-    --ncpus           No. of cpus for each task [2]
-    --mem|-m          Memory usage for each process, e.g. 100mb, 100gb	
+    --runmode|-r      Where to run the scripts, local or none [none]
+                           Note: cluster doesn't work for now, due to R pkg dependency
 
 
 ";
@@ -131,7 +127,7 @@ my $inputfolder="02.Merge";
 my $configfile;
 my $outputfolder="03.DE";
 
-my $formula;
+my $formula="~Group";
 my $comparisons;
 my $treatment;
 my $reference;
