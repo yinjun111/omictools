@@ -144,7 +144,6 @@ my %commands2program=(
 	"rnaseq-var-summary"=>$rnaseq_var_summary,
 	"rnaseq-motif"=>$rnaseq_motif,
 	"rnaseq-motif-summary"=>$rnaseq_motif_summary,
-	"gsea-gen"=>$gsea_gen,
 	
     "chipseq-process"=>$chipseq_process,
     "chipseq-merge"=>$chipseq_merge,
