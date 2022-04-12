@@ -12,7 +12,7 @@ use File::Basename qw(basename dirname);
 ########
 
 
-my $version="0.81";
+my $version="1.0";
 
 #0.2b change ensembl to UCSC format
 #0.2c add bw generation
@@ -36,7 +36,7 @@ my $version="0.81";
 #v0.7, add rat annotation, change default I/O names
 #v0.71, smartseq tag
 #v0.8, add exon and exon junction count by subread
-#v0.81, change STAR location
+#v1.0, change STAR location, slurm tested
 
 my $usage="
 

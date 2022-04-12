@@ -11,7 +11,7 @@ use File::Basename qw(basename dirname);
 ########
 
 
-my $version="0.9";
+my $version="1.0";
 
 #version 0.2a, add r version log
 #v0.3 add runmode
@@ -25,7 +25,7 @@ my $version="0.9";
 #v0.8, support complicated GLM
 #v0.81, add idf and cc options
 #v0.9, add rat annotation, change default I/O names
-
+#v1.0, fix for slurm envir, slurm tested
 
 my $usage="
 
@@ -285,7 +285,7 @@ rinfo<-rbind(rinfo,c("R",R.Version()\$version.string))
 rinfo<-rbind(rinfo,c("Rscript","$rscript"))
 rinfo<-rbind(rinfo,c("R library",paste(.libPaths(), collapse=",")))
 
-for (package in c("DESeq2","argparser","ggplot2","EnhancedVolcano")) {
+for (package in c("BiocManager","DESeq2","argparser","ggplot2","EnhancedVolcano")) {
 	rinfo<-rbind(rinfo,c(package,packageDescription(package,fields="Version")))
 }
 
@@ -718,12 +718,12 @@ elsif($runmode eq "local") {
 }
 elsif($runmode eq "cluster") {
 	#cluster mode
-	#implement for Firefly
+	#implement for HPC
 	
 	system("sh $scriptclusterrun");
 	print LOG "sh $scriptclusterrun;\n\n";
 
-	print STDERR "Starting cluster paralleled processing using $jobnumber tasks. To monitor process, use \"qstat\".\n\n";
+	print STDERR "Starting cluster paralleled processing using $jobnumber tasks. To monitor process, use \"squeue\".\n\n";
 
 }
 

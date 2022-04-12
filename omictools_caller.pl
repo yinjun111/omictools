@@ -4,12 +4,13 @@ use Getopt::Long;
 use File::Basename;
 use Cwd qw(abs_path);
 
-my $version="0.14";
+my $version="0.2";
 
 #v0.11, human & mouse annotation added
 #v0.12, rnaseq-var by GATK3 is added
 #v0.13, some code cleaning, and add prepare-merge
 #v0.14, add rat annotation, changed default i/o folders
+#v0.2, slurm ready
 
 my $usage="
 
@@ -31,9 +32,6 @@ Parameters:
     prepare-merge     Generate a merge folder from raw count file for rnaseq-de/summary analysis
 
     rnaseq-var        RNA-seq variant calling pipeline
-    rnaseq-motif      RNA-seq TFBS motif finding pipeline
-    rnaseq-motif-summary  RNA-seq TFBS motif finding results summary	
-    motif-finder      Transcription factor binding motif prediction
 
     ########
     #AWS
@@ -56,6 +54,10 @@ Parameters:
 
 ";
 
+
+#    rnaseq-motif      RNA-seq TFBS motif finding pipeline
+#    rnaseq-motif-summary  RNA-seq TFBS motif finding results summary	
+#    motif-finder      Transcription factor binding motif prediction
 
 unless (@ARGV) {
 	print STDERR $usage;
@@ -83,7 +85,7 @@ my $omictoolsfolder="/apps/omictools/";
 
 #adding --dev switch for better development process
 if($dev) {
-	$omictoolsfolder="/home/centos/Pipeline/omictools/";
+	$omictoolsfolder="/home/jyin/Pipeline/omictools/";
 }
 else {
 	#the tools called will be within the same folder of the script
@@ -112,7 +114,6 @@ my $rnaseq_var_summary="$omictoolsfolder/rnaseq-var/rnaseq-var_summary.pl";
 my $rnaseq_motif="$omictoolsfolder/rnaseq-motif/rnaseq-motif_caller.pl";
 my $rnaseq_motif_summary="$omictoolsfolder/rnaseq-motif-summary/rnaseq-motif-summary.pl";
 
-my $gsea_gen="perl $omictoolsfolder/gsea-gen/gsea-gen_caller.pl";
 
 my $chipseq_process="$omictoolsfolder/chipseq-process/chipseq-process_caller.pl";
 my $chipseq_merge="$omictoolsfolder/chipseq-merge/chipseq-merge_caller.pl";

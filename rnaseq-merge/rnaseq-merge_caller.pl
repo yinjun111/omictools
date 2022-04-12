@@ -12,7 +12,7 @@ use File::Basename qw(basename dirname);
 ########
 
 
-my $version="0.71";
+my $version="1.0";
 
 #v0.2, add filter function to get files for PCA
 #v0.3, removed -v, add -r implementation for local
@@ -26,7 +26,7 @@ my $version="0.71";
 #v0.6, updated to AWS and v88
 #v0.61, log for expr-qc
 #v0.7, add rat annotation, change default I/O names
-#v0.71, qstat to squeue
+#v1.0, qstat to squeue, slurm tested
 
 my $usage="
 

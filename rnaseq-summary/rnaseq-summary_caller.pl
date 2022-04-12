@@ -11,7 +11,7 @@ use List::Util qw(sum);
 ########
 
 
-my $version="0.83";
+my $version="1.0";
 
 #v0.1b, changed DE match pattern
 #v0.1c, add first line recognition in DE results
@@ -35,6 +35,8 @@ my $version="0.83";
 #v0.81, fix argument for GSEA
 #v0.82, fix app for GSEA
 #v0.83, add FC0Q005,changed default dbs for GSEA
+#v1.0, tested for slurm. skip motif analysis
+
 
 my $usage="
 
@@ -75,9 +77,6 @@ Parameters:
     --tx|-t           Transcriptome
                         Currently support Human.B38.Ensembl88,Mouse.B38.Ensembl88,Rat.Rn6.Ensembl88
 
-    --run_rnaseq-motif  Whether to run omictools rnaseq-motif, only generate script by default [none]
-                        use \"cluster\" to run in HPC
-
     --run_gsea-gen      Whether to run omictools gsea-gen, not run by default [none]
                         use \"none\" to turn off.
                         use \"cluster\" to run GSEA
@@ -90,7 +89,8 @@ Parameters:
 #    --verbose|-v      Verbose
 #    --runmode|-r      Where to run the scripts, local, cluster or none [local]
 #    --jobs|-j         Number of jobs to be paralleled. By default 5 jobs. [5]
-
+#    --run_rnaseq-motif  Whether to run omictools rnaseq-motif, only generate script by default [none]
+#                        use \"cluster\" to run in HPC
 
 unless (@ARGV) {
 	print STDERR $usage;
@@ -169,7 +169,7 @@ if($dev) {
 
 my $mergefiles="$omictoolsfolder/mergefiles/mergefiles_caller.pl";
 my $text2excel="$omictoolsfolder/text2excel/text2excel.pl";
-my $metascape_gen="perl $omictoolsfolder/metascape-gen/metascape-gen_caller.pl";
+
 my $rnaseq_motif="perl $omictoolsfolder/rnaseq-motif/rnaseq-motif_caller.pl".scalar(add_dev($dev));
 my $rnaseq_motif_summary="perl $omictoolsfolder/rnaseq-motif-summary/rnaseq-motif-summary.pl";
 my $parallel_job="perl $omictoolsfolder/parallel-job/parallel-job_caller.pl"; 
@@ -196,7 +196,7 @@ if($dev) {
 my $gsea_gen="perl $gstoolsfolder/gsea-gen/gsea-gen_caller.pl";
 my $gsea_gen_summary="perl $gstoolsfolder/gsea-gen/gsea-gen-summary.pl".scalar(add_dev($dev));
 
-
+my $metascape_gen="perl $omictoolsfolder/metascape-gen/metascape-gen_caller.pl";
 
 
 ########
@@ -883,46 +883,49 @@ print LOG "Files ready for GSEA analysis are in: $outputfolder/forGSEA/\n";
 
 #rnaseq-motif
 #-----------
-print STDERR "Generate files for rnaseq-motif analysis.\n" if $verbose;
-print LOG "Generate files for rnaseq-motif analysis.\n";
+#print STDERR "Generate files for rnaseq-motif analysis.\n" if $verbose;
+{
+	#skip motif analysis
+	next;
+	print LOG "Generate files for rnaseq-motif analysis.\n";
 
 
-foreach my $folder (@usedcomparisons) {
-	#use new de file
-	my $rnaseqmotifcmd="$rnaseq_motif --ge $outputfolder/$folder\_GeneDEreformated.txt --promoter longesttx -o $outputfolder/for_rnaseq-motif/$folder --tx $tx -v";
+	foreach my $folder (@usedcomparisons) {
+		#use new de file
+		my $rnaseqmotifcmd="$rnaseq_motif --ge $outputfolder/$folder\_GeneDEreformated.txt --promoter longesttx -o $outputfolder/for_rnaseq-motif/$folder --tx $tx -v";
 
-	#if($runrnaseqmotif eq "cluster") {
-	#	system($rnaseqmotifcmd." -r cluster");
-	#	print LOG $rnaseqmotifcmd." -r cluster\n";
-	#}
-	#else {
-		system($rnaseqmotifcmd);
-		print LOG $rnaseqmotifcmd,"\n";
-	#}
+		#if($runrnaseqmotif eq "cluster") {
+		#	system($rnaseqmotifcmd." -r cluster");
+		#	print LOG $rnaseqmotifcmd." -r cluster\n";
+		#}
+		#else {
+			system($rnaseqmotifcmd);
+			print LOG $rnaseqmotifcmd,"\n";
+		#}
+	}
+
+	#merge all running scripts
+	system("cat $outputfolder/for_rnaseq-motif/*/scripts/*.sh > $outputfolder/for_rnaseq-motif/run_rnaseq-motif_1.sh");
+
+	#script for rnaseq-motif-summary
+	open(OUT,">$outputfolder/for_rnaseq-motif/run_rnaseq-motif_2.sh") || die $!;
+	print OUT "$rnaseq_motif_summary -i $outputfolder/for_rnaseq-motif/ -o $outputfolder/for_rnaseq-motif/RNASeqMotifSummary\n";
+	close OUT;
+
+	#use parallel-job to run the jobs in tandem
+	my $rnaseqmotifcommand="$parallel_job -i $outputfolder/for_rnaseq-motif/run_rnaseq-motif_1.sh,$outputfolder/for_rnaseq-motif/run_rnaseq-motif_2.sh -o $outputfolder/for_rnaseq-motif/ -n run_rnaseq-motif_1,run_rnaseq-motif_2 --tandem -r";
+
+	print STDERR "$rnaseqmotifcommand\n";
+	print LOG "$rnaseqmotifcommand\n";
+
+
+	if($runrnaseqmotif eq "cluster" && $gsearunnum>0) {
+		system($gseaclustercommand);
+	}
+
+	print STDERR "Files ready for rnaseq-motif analysis are in: $outputfolder/for_rnaseq-motif/\n" if $verbose;
+	print LOG "Files ready for rnaseq-motif analysis are in: $outputfolder/for_rnaseq-motif/\n";
 }
-
-#merge all running scripts
-system("cat $outputfolder/for_rnaseq-motif/*/scripts/*.sh > $outputfolder/for_rnaseq-motif/run_rnaseq-motif_1.sh");
-
-#script for rnaseq-motif-summary
-open(OUT,">$outputfolder/for_rnaseq-motif/run_rnaseq-motif_2.sh") || die $!;
-print OUT "$rnaseq_motif_summary -i $outputfolder/for_rnaseq-motif/ -o $outputfolder/for_rnaseq-motif/RNASeqMotifSummary\n";
-close OUT;
-
-#use parallel-job to run the jobs in tandem
-my $rnaseqmotifcommand="$parallel_job -i $outputfolder/for_rnaseq-motif/run_rnaseq-motif_1.sh,$outputfolder/for_rnaseq-motif/run_rnaseq-motif_2.sh -o $outputfolder/for_rnaseq-motif/ -n run_rnaseq-motif_1,run_rnaseq-motif_2 --tandem -r";
-
-print STDERR "$rnaseqmotifcommand\n";
-print LOG "$rnaseqmotifcommand\n";
-
-
-if($runrnaseqmotif eq "cluster" && $gsearunnum>0) {
-	system($gseaclustercommand);
-}
-
-print STDERR "Files ready for rnaseq-motif analysis are in: $outputfolder/for_rnaseq-motif/\n" if $verbose;
-print LOG "Files ready for rnaseq-motif analysis are in: $outputfolder/for_rnaseq-motif/\n";
-
 
 ####
 #Add gene annotation

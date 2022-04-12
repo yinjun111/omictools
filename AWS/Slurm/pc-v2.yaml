@@ -1,0 +1,31 @@
+Region: us-east-1
+Image:
+  Os: ubuntu2004
+HeadNode:
+  InstanceType: m5.xlarge
+  Networking:
+    SubnetId: subnet-0f76ef0e5e8ef9bba
+  Ssh:
+    KeyName: ParallelClusterV2
+SharedStorage:
+    - MountDir: /apps
+      Name: apps
+      StorageType: Ebs
+      EbsSettings:
+              VolumeType: gp3
+              Size: 200
+    - MountDir: /data
+      Name: data
+      StorageType: Efs
+Scheduling:
+  Scheduler: slurm
+  SlurmQueues:
+  - Name: compute
+    ComputeResources:
+    - Name: r512xlarge
+      InstanceType: r5.12xlarge
+      MinCount: 0
+      MaxCount: 10
+    Networking:
+      SubnetIds:
+      - subnet-017ced350da8f1171
