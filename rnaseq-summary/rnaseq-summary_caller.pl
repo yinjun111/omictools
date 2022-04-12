@@ -64,7 +64,7 @@ Parameters:
 
     --config|-c       Configuration file match the samples in the rnaseq-merge folder
                            first column as sample name.
-    --group|-g        Group name in config file for avg calculation
+    --group|-g        Group name in config file for avg calculation [Group]
 
     --rnaseq-merge|-m rnaseq-merge folder to retrieve TPM/FPKM data [02.Merge]
 
@@ -111,7 +111,7 @@ my $inputfolders="03.DE";
 my $outputfolder="04.Summary";
 my $comparisons;
 my $configfile;
-my $group;
+my $group="Group";
 my $rnaseqmerge="02.Merge";
 my $fccutoff;
 my $qcutoff;
