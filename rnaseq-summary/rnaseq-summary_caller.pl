@@ -11,7 +11,7 @@ use List::Util qw(sum);
 ########
 
 
-my $version="1.0";
+my $version="1.1";
 
 #v0.1b, changed DE match pattern
 #v0.1c, add first line recognition in DE results
@@ -36,7 +36,7 @@ my $version="1.0";
 #v0.82, fix app for GSEA
 #v0.83, add FC0Q005,changed default dbs for GSEA
 #v1.0, tested for slurm. skip motif analysis
-
+#v1.1 add pcutoff
 
 my $usage="
 
@@ -73,6 +73,7 @@ Parameters:
 
     --fccutoff        Log2 FC cutoff, optional
     --qcutoff         Corrected P cutoff, optional
+    --pcutoff         Raw P cutoff, use with caution, optional
 	
     --tx|-t           Transcriptome
                         Currently support Human.B38.Ensembl88,Mouse.B38.Ensembl88,Rat.Rn6.Ensembl88
@@ -115,6 +116,7 @@ my $group="Group";
 my $rnaseqmerge="02.Merge";
 my $fccutoff;
 my $qcutoff;
+my $pcutoff=2;
 my $geneinput;
 my $txinput;
 my $gseadbs="c5.go.bp.v7.4,c2.cp.reactome.v7.4";
@@ -138,6 +140,7 @@ GetOptions(
 	
 	"fccutoff=s" => \$fccutoff,
 	"qcutoff=s" => \$qcutoff,
+	"pcutoff=s" => \$pcutoff,
 	
 	"tx|t=s" => \$tx,	
 	"runmode|r=s" => \$runmode,		
@@ -573,14 +576,25 @@ foreach my $folder (@usedcomparisons) {
 		my @array=split/\t/;
 		
 		if($linenum==0) {
-
-			if(defined $fccutoff && length($fccutoff)>0 && defined $qcutoff && length($qcutoff)>0) {
-				$array[5]="Significance: Log2FC $fccutoff BHP $qcutoff";
+			if($pcutoff==2) {
+				if(defined $fccutoff && length($fccutoff)>0 && defined $qcutoff && length($qcutoff)>0) {
+					$array[5]="Significance: Abs(Log2FC)>=$fccutoff BHP<$qcutoff";
+				}
+				elsif((defined $fccutoff && length($fccutoff)>0) || (defined $qcutoff && length($qcutoff)>0)) {
+					print STDERR "ERROR: --fccutoff and --qcutoff have to be both defined.\n\n";
+					print LOG "ERROR: --fccutoff and --qcutoff have to be both defined.\n\n";
+					exit;
+				}
 			}
-			elsif((defined $fccutoff && length($fccutoff)>0) || (defined $qcutoff && length($qcutoff)>0)) {
-				print STDERR "ERROR: --fccutoff and --qcutoff have to be both defined.\n\n";
-				print LOG "ERROR: --fccutoff and --qcutoff have to be both defined.\n\n";
-				exit;
+			else {
+				if(defined $fccutoff && length($fccutoff)>0 && defined $qcutoff && length($qcutoff)>0 && defined $pcutoff && length($pcutoff)>0) {
+					$array[5]="Significance: Abs(Log2FC)>=$fccutoff RawP<$pcutoff BHP<$qcutoff";
+				}
+				elsif((defined $fccutoff && length($fccutoff)>0) || (defined $qcutoff && length($qcutoff)>0) || (defined $pcutoff && length($pcutoff)>0)) {
+					print STDERR "ERROR: --pcutoff, --fccutoff and --qcutoff have to be all defined.\n\n";
+					print LOG "ERROR: --pcutoff, --fccutoff and --qcutoff have to be all defined.\n\n";
+					exit;
+				}				
 			}
 			
 			$folder2genetitle{$folder}=join("\t",@array);
@@ -594,16 +608,36 @@ foreach my $folder (@usedcomparisons) {
 			
 			#new fc and q
 			if($array[4] ne "NA" && $array[4] ne " ") {
-				if(defined $fccutoff && length($fccutoff)>0 && defined $qcutoff && length($qcutoff)>0) {
-					if($array[1] >= $fccutoff && $array[4] < $qcutoff) {
-						$array[5]=1;
+				
+				if($pcutoff==2) {
+					if(defined $fccutoff && length($fccutoff)>0 && defined $qcutoff && length($qcutoff)>0) {
+						if($array[1] >= $fccutoff && $array[4] < $qcutoff) {
+							$array[5]=1;
+						}
+						elsif($array[1] <= -$fccutoff && $array[4] < $qcutoff) {
+							$array[5]=-1;
+						}
+						else{
+							$array[5]=0;
+						}
 					}
-					elsif($array[1] <= -$fccutoff && $array[4] < $qcutoff) {
-						$array[5]=-1;
+					#no new fc/p/q defined, use previous cutoffs
+				}
+				else {
+				
+					if(defined $fccutoff && length($fccutoff)>0 && defined $qcutoff && length($qcutoff)>0 && defined $pcutoff && length($pcutoff)>0) {
+						if($array[1] >= $fccutoff && $array[4] < $qcutoff && $array[3] < $pcutoff ) {
+							$array[5]=1;
+						}
+						elsif($array[1] <= -$fccutoff && $array[4] < $qcutoff && $array[3] < $pcutoff) {
+							$array[5]=-1;
+						}
+						else{
+							$array[5]=0;
+						}
 					}
-					else{
-						$array[5]=0;
-					}
+					#no new fc/p/q defined, use previous cutoffs
+
 				}
 				
 				#summary for different cutoffs
@@ -614,8 +648,7 @@ foreach my $folder (@usedcomparisons) {
 					elsif($array[1] <= -$report_cutoffs{$cutoff}[0] && $array[4] < $report_cutoffs{$cutoff}[1]) {
 						$cutoff_summary{$cutoff}{$folder}{-1}++;
 					}
-				}
-				
+				}				
 			}
 			
 			$cutoff_summary{"current"}{$folder}{$array[5]}++;
@@ -626,7 +659,6 @@ foreach my $folder (@usedcomparisons) {
 		$linenum++;
 	}
 	close IN;
-	
 	
 }
 
