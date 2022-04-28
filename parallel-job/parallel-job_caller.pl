@@ -10,7 +10,7 @@ use File::Basename qw(basename dirname);
 #Updates
 ########
 
-my $version="0.3";
+my $version="0.31";
 #0.11 change procs to ppn, procs is still usable but hidden
 #0.12 add --asis to submit the task directly
 #0.13 add note for --nodes
@@ -19,6 +19,7 @@ my $version="0.3";
 #0.21, minor correction
 #0.22, hold compute node
 #0.3, to slurm
+#0.31, removed time limit
 
 ########
 #Prerequisites
@@ -616,7 +617,8 @@ if(defined $params->{"mem"}) {
 #"## Set time limit
 ##PBS -l walltime=1600:00:00\n";
 
-print OUT2 "## Set time limit\n#SBATCH -t 30\n";
+#remove time limit
+#print OUT2 "## Set time limit\n#SBATCH -t 120:00:00\n";
 
 #work directory 
 #print OUT2 "## Set working directory\n#PBS -wd ",$params->{"wo"},"\n";
@@ -698,9 +700,9 @@ if(defined $params->{"mem"}) {
 }
 
 #time limit
-print OUT2
-"## Set time limit
-#PBS -l walltime=1600:00:00\n";
+#print OUT2
+#"## Set time limit
+##PBS -l walltime=1600:00:00\n";
 
 #work directory 
 #print OUT2 "## Set working directory\n#PBS -wd ",$params->{"wo"},"\n";
