@@ -12,7 +12,7 @@ use File::Basename qw(basename dirname);
 ########
 
 
-my $version="1.0";
+my $version="1.1";
 
 #v0.2, add filter function to get files for PCA
 #v0.3, removed -v, add -r implementation for local
@@ -27,6 +27,7 @@ my $version="1.0";
 #v0.61, log for expr-qc
 #v0.7, add rat annotation, change default I/O names
 #v1.0, qstat to squeue, slurm tested
+#v1.1, add AS calculation
 
 my $usage="
 
@@ -53,6 +54,8 @@ Parameters:
     --group|-g        Group name in config file for expr-qc plots [Group]
 
     --anno|-a         Add annotation
+
+    --as              Calculate Splicing Index for alternative splicing [F]
 
     --filter          Signal filter [auto]
                          automatically defined signal cutoff as
@@ -93,6 +96,7 @@ my $outputfolder="02.Merge";
 my $verbose=1;
 my $tx;
 my $group="Group";
+my $as="F";
 my $task=7;
 my $ncpus=2;
 my $mem;
@@ -108,6 +112,7 @@ GetOptions(
 	"output|o=s" => \$outputfolder,
 	"group|g=s" => \$group,
 	"tx|t=s" => \$tx,	
+	"as=s" => \$as,
 	"filter=s" => \$filter,
 	"task=s" => \$task,
 	"ncpus=s" => \$ncpus,
@@ -145,6 +150,9 @@ my $rnaseqmergefilter="$omictoolsfolder/rnaseq-merge/rnaseq-merge_filter.R";
 my $count2cpm="$omictoolsfolder/rnaseq-merge/count2cpm.R";
 my $process_multiqc="$omictoolsfolder/rnaseq-merge/process_multiqc_summary.pl";
 my $expr_qc="$omictoolsfolder/expr-qc/expr-qc.R";
+my $tx2si="$omictoolsfolder/rnaseq-merge/tx2si.R";
+my $format_exon="$omictoolsfolder/rnaseq-merge/format_exon.R";
+my $format_exonjunc="$omictoolsfolder/rnaseq-merge/format_exonjunc.R";
 
 #used programs
 my $multiqc=find_program("/apps/anaconda3/bin/multiqc");
