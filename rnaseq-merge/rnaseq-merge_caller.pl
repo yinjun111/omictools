@@ -519,6 +519,25 @@ print S1 "rm $tempfolder/$txfpkmmerged\_wrongtitle;rm $tempfolder/$txfpkmmerged\
 print S1 "\n";
 
 
+#AS calculation
+#to be implemented
+
+#tx SI
+
+
+#exon count
+
+#exon tpm
+
+#exon SI
+
+
+#exon junc count
+
+
+#exon junc SI
+
+
 close S1;
 
 
