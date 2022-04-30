@@ -175,6 +175,8 @@ my $txtpmmerged="tx.results.merged.tpm.txt";
 my $txfpkmmerged="tx.results.merged.fpkm.txt";
 my $txcpmmerged="tx.results.merged.cpm.txt";
 
+my $txtpmsi="tx.results.merged.tpm.si.txt";
+
 #Create folders
 
 unless(defined $outputfolder && length($outputfolder)>0 ) {
@@ -518,26 +520,6 @@ print S1 "cat $tempfolder/tx_title.txt $tempfolder/$txfpkmmerged\_notitle > $out
 print S1 "rm $tempfolder/$txfpkmmerged\_wrongtitle;rm $tempfolder/$txfpkmmerged\_notitle;";
 print S1 "\n";
 
-
-#AS calculation
-#to be implemented
-
-#tx SI
-
-
-#exon count
-
-#exon tpm
-
-#exon SI
-
-
-#exon junc count
-
-
-#exon junc SI
-
-
 close S1;
 
 
@@ -572,8 +554,32 @@ my $txcpmmerged_filtered="tx.results.merged.cpm.filtered.$filter.txt";
 
 print S2 "$Rscript $count2cpm --count $outputfolder/$txcountmerged_filtered --cpm $outputfolder/$txcpmmerged_filtered;";
 
-
 print S2 "\n";
+
+
+
+########
+#AS calculation
+########
+
+#to be implemented
+
+if($as eq "T") {
+	#tx SI
+	print S2 "$Rscript $tx2si --gene $outputfolder/$genetpmmerged --tx $outputfolder/$txtpmmerged --anno ",$tx2ref{$tx}{"txanno"}," --out $outputfolder/$txtpmsi\n";
+
+	#exon count
+
+	#exon tpm
+
+	#exon SI
+
+
+	#exon junc count
+
+
+	#exon junc SI
+}
 
 close S2;
 

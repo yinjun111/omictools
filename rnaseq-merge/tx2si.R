@@ -57,7 +57,8 @@ write_table_proper<-function(file,data,name="Gene") {
 #Program starts
 ##########
 
-tx_addup<-0.001
+#if gene exp is 0, return inf?
+#tx_addup<-0.001
 
 gene_tpm<-read.table(args$"gene",header=T,row.names=1,sep="\t",check.names=F,flush=T,comment.char="",quote="")
 tx_tpm<-read.table(args$"tx",header=T,row.names=1,sep="\t",check.names=F,flush=T,comment.char="",quote="")
