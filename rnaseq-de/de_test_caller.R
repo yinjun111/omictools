@@ -10,7 +10,7 @@ library(argparser,quietly =T)
 #Version
 ####
 
-version="0.64"
+version="0.7"
 
 #0.2b, change auto filter to *5. Add indfilter and cookscutoff option
 #0.23, add write_table_proper
@@ -24,8 +24,10 @@ version="0.64"
 #0.62, remove model matrix empty columns
 #0.63, change library calling lcoations
 #0.64, fix bug for group names starting with numbers
+#0.7, add LM based analysis for Splicing Index etc.
 
-description=paste0("de_test\nversion ",version,"\n","Usage:\nDescription: Differential Expression calculation using DESeq2\n")
+
+description=paste0("de_test\nversion ",version,"\n","Usage:\nDescription: Differential Expression calculation\n")
 
 
 #####
@@ -43,7 +45,7 @@ parser <- add_argument(parser, arg="--treat",short="-t", type="character", help 
 parser <- add_argument(parser, arg="--ref",short="-r", type="character", help = "reference name")
 parser <- add_argument(parser, arg="--fccutoff", type="float", help = "Log2 FC cutoff",default=1)
 parser <- add_argument(parser, arg="--qcutoff", type="float", help = "qcutoff",default=0.05)
-parser <- add_argument(parser, arg="--pmethod",type="character", help = "Method used in DESeq2",default="Wald")
+parser <- add_argument(parser, arg="--pmethod",type="character", help = "Method used to calculate P value",default="DESeq2-Wald")
 parser <- add_argument(parser, arg="--qmethod",type="character", help = "FDR Method",default="BH")
 parser <- add_argument(parser, arg="--filter",type="float", help = "Count filter for all the exps. Default as mininum of (No. of samples) x 5 counts",default="auto")
 parser <- add_argument(parser, arg="--independentfiltering",type="logical", help = "DESeq2 independentFiltering",default=T)
@@ -223,6 +225,96 @@ deseq2_test_v1 <- function(mat,anno,design,fc_cutoff=1,q_cutoff=0.05,pmethod="Wa
 
 	return(result)
 }
+
+
+######
+#LM
+######
+lm_test <- function(mat,anno,design,fc_cutoff=1,q_cutoff=0.05,pmethod="Wald",qmethod="BH",core=core,treat,ref,independentfiltering=T,cookscutoff=T,na.rm=0){
+
+	#Get the last variable
+	design<-gsub(" ","",design)
+	design.vars<-gsub("~","",design)
+	design.vars<-unlist(strsplit(design.vars,"\\+"))
+	
+	#change treat and ref names
+	treat.m=make.names(treat)
+	ref.m=make.names(ref)
+
+	#anno relevel column for last variable #only works for 1vs1 for the selected col
+	#convert to factor
+	anno[,design.vars[length(design.vars)]]<-factor(make.names(anno[,design.vars[length(design.vars)]]),levels=c(ref.m,treat.m))
+	
+	#new design
+	design.mm<-data.frame(anno[,design.vars])
+	colnames(design.mm)<-design.vars
+	
+	#remove NA
+	mat[is.na(mat)]=na.rm	
+	
+	#lm test here
+	res<-t(apply(mat,1,function(x) {
+		d<-data.frame(cbind(x,design.mm))
+		lm.form<-as.formula(paste("x",design))
+		result<-anova(lm(lm.form,d))
+		c(result$`F value`[length(design.vars)],result$`Pr(>F)`[length(design.vars)])
+	}))
+	
+	
+	#convert to model matrix
+	#design.mm<-model.matrix(as.formula(design),anno)	
+	
+	#remove empty col
+	#design.mm<-design.mm[,apply(design.mm,2,sum)>0] 
+	#print(design.mm)
+	
+	#remove NA
+	#mat[is.na(mat)]=na.rm
+	
+	#lm test here
+	#res<-t(apply(mat,1,function(x) {result<-anova(lm(x~design.mm));c(result$`F value`[1],result$`Pr(>F)`[1])}))
+	
+	#p,q,F
+	p<-res[,2]
+	q<-p.adjust(p,method=qmethod)
+	stat<-res[,1]
+	
+	#calculate FC
+	fc<-apply(mat,1,function(x){
+		means<-as.vector(unlist(lapply(split(x,anno[,design.vars[length(design.vars)]]),mean)))
+		if(means[1]>0) {
+			if(means[2]==0) {
+				0
+			} else {
+				log2(means[2]/means[1])
+			}
+		} else {
+			log2((means[2]+0.001)/(means[1]+0.001))
+		}
+	})
+	
+	
+	#significance by fc & qval
+	sig<-rep(0,length(q))
+	
+	sig[!is.na(fc) & fc>=fc_cutoff & !is.na(q) & q<q_cutoff]=1
+	sig[!is.na(fc) & fc<=-fc_cutoff & !is.na(q) & q<q_cutoff]=-1
+	sig[is.na(fc) | is.na(q) ]=NA
+
+	mat.result<-cbind(fc,stat,p,q,sig)
+	
+	colnames(mat.result)<-c(paste0("Log2FC ",treat," vs ",ref),"Stat:F","P",paste(qmethod,"P"),paste("Significance: Abs(Log2FC)>=",round(fc_cutoff,3)," ",qmethod, "P<",q_cutoff,sep=""))
+	
+	result<-list()
+	result$result=mat.result
+
+	return(result)
+}
+
+
+######
+#Plots
+######
 
 volcano_plot_ggplot<-function(fc,q,sig,xlim=c(-7,7),ylim=c(0,30),xlab="Log2FC",ylab="-log10 P",main="Volcano Plot",fc_cutoff=args$fccutoff,q_cutoff=args$q_cutof) {
   
@@ -521,7 +613,11 @@ anno.sel<-anno[data.sel.rows]
 rdatafile=sub(".txt$",".rdata",args$out,perl=T)
 
 
-data.sel.result<-deseq2_test(mat=data.sel,anno=config,design=args$formula,fc_cutoff=args$fccutoff,q_cutoff=args$qcutoff,pmethod=args$pmethod,qmethod=args$qmethod,treat=args$treat,ref=args$ref,independentfiltering=args$independentfiltering,cookscutoff=args$cookscutoff)
+if(args$pmethod == "DESeq2-Wald" | args$pmethod == "Wald") {
+	data.sel.result<-deseq2_test(mat=data.sel,anno=config,design=args$formula,fc_cutoff=args$fccutoff,q_cutoff=args$qcutoff,pmethod=args$pmethod,qmethod=args$qmethod,treat=args$treat,ref=args$ref,independentfiltering=args$independentfiltering,cookscutoff=args$cookscutoff)
+} else if (args$pmethod == "Lm") {
+	data.sel.result<-lm_test(mat=data.sel,anno=config,design=args$formula,fc_cutoff=args$fccutoff,q_cutoff=args$qcutoff,pmethod=args$pmethod,qmethod=args$qmethod,treat=args$treat,ref=args$ref)
+}
 
 #write.table(data.sel.result$result,file=args$out,sep="\t",quote=F,col.names = NA)
 

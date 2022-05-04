@@ -84,6 +84,13 @@ for(rnum in 1:nrow(tx_tpm)) {
 	}
 }
 
+#different implementation #may need first column info
+#tx_si<-apply(tx_tpm,1,function(x) {
+#	x
+#
+#})
+
+
 rownames(tx_si)<-txs
 colnames(tx_si)<-colnames(tx_tpm)
 
