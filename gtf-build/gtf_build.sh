@@ -115,6 +115,7 @@ omictoolsfolder=/apps/omictools/
 ensembl2ucsc=$omictoolsfolder/gtf-build/ensembl2ucsc_caller.pl
 gtf2anno=$omictoolsfolder/gtf-build/gtf2anno.pl
 tx2anno=$omictoolsfolder/gtf-build/tx_anno.pl
+exon2anno=$omictoolsfolder/gtf-build/exon_anno.pl
 
 star=/apps/STAR-2.7.8a/bin/Linux_x86_64/STAR
 starfolder=/apps/STAR-2.7.8a/bin/Linux_x86_64/
