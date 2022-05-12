@@ -166,6 +166,10 @@ perl $tx2anno -i $outfolder/${gtffilename/.gtf/_ucsc_gene_annocombo.txt} -a $txa
 #gtf2bed for RSeQC
 #awk '{ if ($0 ~ "transcript_id") print $0; else print $0" transcript_id \"\";"; }' Mus_musculus.GRCm38.88_ucsc.gtf | gtf2bed - > Mus_musculus.GRCm38.88_ucsc.bed
 
+#Generate exon annotation
+printf "perl $exon2anno -i $outfolder/${gtffilename/.gtf/_ucsc.gtf} -o  $outfolder/${gtffilename/.gtf/_ucsc_exon_annocombo.txt} \n" | tee -a $logfile
+perl $exon2anno -i $outfolder/${gtffilename/.gtf/_ucsc.gtf} -o  $outfolder/${gtffilename/.gtf/_ucsc_exon_annocombo.txt} 
+ 
 
 printf "gtf-build done.\n" >> $logfile
 date >> $logfile

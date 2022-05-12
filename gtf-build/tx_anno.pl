@@ -60,6 +60,7 @@ GetOptions(
 
 
 my %tx2anno;
+my %tx2name;
 my $txtitle;
 my $txannocol;
 
@@ -71,10 +72,11 @@ while(<IN>) {
 
 	if ($_=~/^Transcript/) {
 		$txtitle=join("\t",@array[1..$#array]);
-		$txannocol=@array-1;
+		$txannocol=@array-2;
 	}
-	else {	
-		$tx2anno{$array[0]}=join("\t",@array[1..$#array]);
+	else {
+		$tx2name{$array[0]}=$array[1]; #name
+		$tx2anno{$array[0]}=join("\t",@array[2..$#array]); #others
 		
 	}
 }
@@ -97,15 +99,16 @@ while(<IN>) {
 	my @array=split/\t/;
 
 	if($linenum==0) {
-		print OUT "Transcript\t",join("\t",@array[0..($txcol-2),$txcol..$#array],$txtitle),"\n";
+		print OUT "Transcript\ttranscript_name\t",join("\t",@array[0..($txcol-2),$txcol..$#array],$txtitle),"\n";
 	}
 	else {
-		foreach my $tx (split(",",$array[$txcol-1])) {
-			print OUT $tx,"\t",join("\t",@array[0..($txcol-2),$txcol..$#array]),"\t";
+		foreach my $tx (split(",",$array[$txcol-1])) {			
 			if(defined $tx2anno{$tx}) {
+				print OUT $tx,"\t",$tx2name{$tx},"\t",join("\t",@array[0..($txcol-2),$txcol..$#array]),"\t";
 				print OUT $tx2anno{$tx},"\n";
 			}
 			else {
+				print OUT $tx,"\t \t",join("\t",@array[0..($txcol-2),$txcol..$#array]),"\t";
 				print OUT join("\t",(" ") x $txannocol),"\n";
 			}
 		}
