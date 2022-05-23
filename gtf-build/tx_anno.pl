@@ -71,7 +71,7 @@ while(<IN>) {
 	my @array=split/\t/;
 
 	if ($_=~/^Transcript/) {
-		$txtitle=join("\t",@array[1..$#array]);
+		$txtitle=join("\t",@array[2..$#array]);
 		$txannocol=@array-2;
 	}
 	else {

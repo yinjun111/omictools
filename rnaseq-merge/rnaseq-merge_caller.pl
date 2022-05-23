@@ -12,7 +12,7 @@ use File::Basename qw(basename dirname);
 ########
 
 
-my $version="1.1";
+my $version="1.2";
 
 #v0.2, add filter function to get files for PCA
 #v0.3, removed -v, add -r implementation for local
@@ -28,6 +28,7 @@ my $version="1.1";
 #v0.7, add rat annotation, change default I/O names
 #v1.0, qstat to squeue, slurm tested
 #v1.1, add AS calculation
+#v1.2, add exon support. add submit_job function
 
 my $usage="
 
@@ -55,7 +56,7 @@ Parameters:
 
     --anno|-a         Add annotation
 
-    --as              Calculate Splicing Index for alternative splicing [F]
+    --as              Prepare files for alternative splicing [F]
 
     --filter          Signal filter [auto]
                          automatically defined signal cutoff as
@@ -65,10 +66,23 @@ Parameters:
     --runmode|-r      Where to run the scripts, local, cluster or none [none]
 	
 	
-	#Parallel computing controls
-    --task            Number of tasks to be paralleled. By default 7 tasks. [7]
-    --ncpus           No. of cpus for each task [2]
-    --mem|-m          Memory usage for each process, e.g. 100mb, 100gb
+    #Parameters for HPC
+
+    --task            Number of tasks to be paralleled. By default by the number of commands in submitted jobs.
+
+    --mem|-m          Deprecated for Slurm. Memory usage for each process, e.g. 100mb, 100gb [40gb]
+	
+    For each task, there are two ways of specifying the computing resource,
+      but you can't mix --nodes and --ncpus together.
+	A) by specifying number of nodes and process (default)
+    --nodes           The value can be A) No. of nodes for each task
+                                       B) Name of the node, e.g. n001.cluster.com                        
+    --ppn             No. of processes for each task. By default [4]
+                         Default for rnaseq-process
+	
+	B) by specifying the total number of cpus
+    --ncpus           No. of cpus for each task for tasks can't use multiple nodes
+
 
 ";
 
@@ -97,8 +111,10 @@ my $verbose=1;
 my $tx;
 my $group="Group";
 my $as="F";
-my $task=7;
-my $ncpus=2;
+my $task;
+my $ncpus=4;
+my $ppn=6;
+my $nodes;
 my $mem;
 my $filter="auto";
 my $runmode="none";
@@ -114,8 +130,11 @@ GetOptions(
 	"tx|t=s" => \$tx,	
 	"as=s" => \$as,
 	"filter=s" => \$filter,
+	
 	"task=s" => \$task,
 	"ncpus=s" => \$ncpus,
+	"ppn=s" => \$ppn,
+	"nodes=s" => \$nodes,	
 	"mem=s" => \$mem,	
 
 	"runmode|r=s" => \$runmode,		
@@ -176,6 +195,9 @@ my $txfpkmmerged="tx.results.merged.fpkm.txt";
 my $txcpmmerged="tx.results.merged.cpm.txt";
 
 my $txtpmsi="tx.results.merged.tpm.si.txt";
+
+my $exoncountmerged="exon.results.merged.count.txt";
+my $exoncountsi="exon.results.merged.count.si.txt";
 
 #Create folders
 
@@ -242,7 +264,8 @@ my %tx2ref=(
 		"gtf"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.88_ucsc.gtf",
 		"homeranno"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.88_ucsc_homeranno.txt",
 		"geneanno"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.88_ucsc_gene_annocombo.txt",
-		"txanno"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.88_ucsc_tx_annocombo.txt"},
+		"txanno"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.88_ucsc_tx_annocombo.txt",
+		"exonanno"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.88_ucsc_exon_annocombo.txt",},
 	"Mouse.B38.Ensembl88"=>{ 
 		"star"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mouse.B38.Ensembl88_STAR",
 		"rsem"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mouse.B38.Ensembl88_STAR/Mouse_RSEM",
@@ -251,7 +274,8 @@ my %tx2ref=(
 		"gtf"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc.gtf",
 		"homeranno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_homeranno.txt",
 		"geneanno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_gene_annocombo.txt",
-		"txanno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_tx_annocombo.txt"},
+		"txanno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_tx_annocombo.txt",
+		"exonanno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_exon_annocombo.txt"},
 	"Rat.Rn6.Ensembl88"=>{ 
 		"star"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rat.Rn6.Ensembl88_STAR",
 		"rsem"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rat.Rn6.Ensembl88_STAR/Rat_RSEM",
@@ -259,7 +283,8 @@ my %tx2ref=(
 		"fasta"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rattus_norvegicus.Rnor_6.0.dna.toplevel_ucsc.fa",
 		"gtf"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rattus_norvegicus.Rnor_6.0.88_ucsc.gtf",
 		"geneanno"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rattus_norvegicus.Rnor_6.0.88_ucsc_gene_annocombo.txt",
-		"txanno"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rattus_norvegicus.Rnor_6.0.88_ucsc_tx_annocombo.txt"}
+		"txanno"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rattus_norvegicus.Rnor_6.0.88_ucsc_tx_annocombo.txt",
+		"exonanno"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rattus_norvegicus.Rnor_6.0.88_ucsc_exon_annocombo.txt"}
 );
 
 
@@ -354,6 +379,7 @@ print LOG "\nReading sample folders.\n";
 
 my %sample2gene;
 my %sample2tx;
+my %sample2exon;
 my %sample2folder;
 
 foreach my $infolder (split(",",$inputfolders)) {
@@ -385,6 +411,14 @@ foreach my $infolder (split(",",$inputfolders)) {
 					if($samplefile=~/.isoforms.results/) {
 						$sample2tx{$samplename}=abs_path($samplefile);
 					}
+					
+					if($as eq "T") {
+						#exon count
+						if($samplefile=~/featurecounts_exon.txt$/) {
+							$sample2exon{$samplename}=abs_path($samplefile);
+						}
+					}
+					
 				}
 			}
 		}
@@ -406,11 +440,28 @@ if( scalar(@samples_array) != scalar(keys %sample2gene) || scalar(@samples_array
 	exit;
 }
 
+if($as eq "T") {
+	print STDERR scalar(keys %sample2exon)," samples identified with exon results.\n" if $verbose;
+	print LOG scalar(keys %sample2exon)," samples identified with exon results.\n";
+	
+	if( scalar(@samples_array) != scalar(keys %sample2exon) ) {
+		print STDERR "ERROR:Not all samples have exon results. You need to run rnaseq-process with --as T.\n\n";
+		print LOG "ERROR:Not all samples have exon results. You need to run rnaseq-process with --as T.\n\n";
+		exit;
+	}	
+	
+}
+
+
 
 #print OUT model to combine gene and tx results
 
 system("cut -f 1 ".$sample2gene{$samples_array[0]}." > $tempfolder/genes.txt");
 system("cut -f 1 ".$sample2tx{$samples_array[0]}." > $tempfolder/txs.txt");
+
+if($as eq "T") {
+	system("cut -f 1 ".$tx2ref{$tx}{"exonanno"}."> $tempfolder/exons.txt");
+}
 
 #print title for gene and txs
 open(OUT,">$tempfolder/gene_title.txt") || die $!;
@@ -421,10 +472,18 @@ open(OUT,">$tempfolder/tx_title.txt") || die $!;
 print OUT "Tx\t",join("\t",@samples_array),"\n";
 close OUT;
 
+if($as eq "T") {
+	open(OUT,">$tempfolder/exon_title.txt") || die $!;
+	print OUT "Exon\t",join("\t",@samples_array),"\n";
+	close OUT;
+}
+
+
 
 #get all files
 my @genefiles;
 my @txfiles;
+my @exonfiles;
 
 foreach my $sample (@samples_array) {
 	if(defined $sample2gene{$sample}) {
@@ -444,6 +503,18 @@ foreach my $sample (@samples_array) {
 		print LOG "ERROR: $sample isoform.results not defined in $inputfolders.\n\n";
 		exit;
 	}
+	
+	if($as eq "T") {
+		if(defined $sample2exon{$sample}) {
+			push @exonfiles,$sample2exon{$sample};
+		}
+		else {
+			print STDERR "ERROR: $sample exon results not defined in $inputfolders.\n\n";
+			print LOG "ERROR: $sample exon results not defined in $inputfolders.\n\n";
+			exit;
+		}	
+	}
+	
 }
 
 
@@ -520,7 +591,46 @@ print S1 "cat $tempfolder/tx_title.txt $tempfolder/$txfpkmmerged\_notitle > $out
 print S1 "rm $tempfolder/$txfpkmmerged\_wrongtitle;rm $tempfolder/$txfpkmmerged\_notitle;";
 print S1 "\n";
 
+#exon count
+
+if($as eq "T") {
+
+	print S1 "cp ".$tx2ref{$tx}{"exonanno"}." $outputfolder/exonanno.txt;";
+	
+	#exon count
+	print S1 "$mergefiles -m $tempfolder/exons.txt -i ",join(",",@exonfiles)," -l 7 -o $tempfolder/$exoncountmerged\_wrongtitle;";
+	print S1 "tail -n +2 $tempfolder/$exoncountmerged\_wrongtitle > $tempfolder/$exoncountmerged\_notitle;";
+	print S1 "cat $tempfolder/exon_title.txt $tempfolder/$exoncountmerged\_notitle > $outputfolder/$exoncountmerged;";
+	print S1 "rm $tempfolder/$exoncountmerged\_wrongtitle;rm $tempfolder/$exoncountmerged\_notitle;";
+	print S1 "\n";
+	
+	#exon junc count
+
+	
+	
+}
+
+
 close S1;
+
+
+
+#tasks, local 4, cluster by number of samples
+unless(defined $task && length($task)>0) {
+	if($runmode eq "cluster") {
+		open(IN,$scriptfile1);
+		my @script1cont=<IN>;
+		my $scriptlines=scalar(@script1cont);
+		close IN;
+		print STDERR "\n$scriptlines commands detected in $scriptfile1. Use $scriptlines tasks in HPC.\n\n";
+		$task=$scriptlines;
+	}
+	else {
+		$task=4;
+	}
+}
+
+
 
 
 ##########
@@ -566,19 +676,16 @@ print S2 "\n";
 
 if($as eq "T") {
 	#tx SI
-	print S2 "$Rscript $tx2si --gene $outputfolder/$genetpmmerged --tx $outputfolder/$txtpmmerged --anno ",$tx2ref{$tx}{"txanno"}," --out $outputfolder/$txtpmsi\n";
-
-	#exon count
-
-	#exon tpm
+	#filter to have at least sum of n*0.1 tpm from all samples
+	print S2 "$Rscript $tx2si --gene $outputfolder/$genetpmmerged --tx $outputfolder/$txtpmmerged --anno ",$tx2ref{$tx}{"txanno"}," --out $outputfolder/$txtpmsi --filter auto*0.1\n";
 
 	#exon SI
-
-
-	#exon junc count
+	#filter to have at least n*3 reads from all samples
+	print S2 "$Rscript $tx2si --gene $outputfolder/$genecountmerged --tx $outputfolder/$exoncountmerged --anno ",$tx2ref{$tx}{"exonanno"}," --out $outputfolder/$exoncountsi  --filter auto*3\n";
 
 
 	#exon junc SI
+	
 }
 
 close S2;
@@ -588,82 +695,7 @@ close S2;
 #Run mode
 #######
 
-open(LOUT,">$scriptlocalrun") || die "ERROR:can't write to $scriptlocalrun. $!";
-open(SOUT,">$scriptclusterrun") || die "ERROR:can't write to $scriptclusterrun. $!";
-
-
-my @scripts_all=($scriptfile1,$scriptfile2);
-
-
-#print out command for local and cluster parallel runs
-my $jobnumber=0;
-my $jobname="rnaseq-merge-$timestamp";
-
-if($task eq "auto") {
-	$jobnumber=0;
-}
-else {
-	$jobnumber=$task;
-}
-
-my @local_runs;
-my @script_names;
-
-foreach my $script (@scripts_all) {
-	push @local_runs,"cat $script | parallel -j $jobnumber";
-
-	if($script=~/([^\/]+)\.\w+$/) {
-		#push @script_names,$1."_".basename_short($outputfolder);
-		push @script_names,$1;
-	}
-}
-
-my $localcommand="screen -S $jobname -dm bash -c \"source ~/.bashrc;".join(";",@local_runs).";\"";
-
-print LOUT $localcommand,"\n";
-close LOUT;
-
-#print out command for cluster parallel runs
-
-my $clustercommand="perl $parallel_job -i ".join(",", @scripts_all)." -o $scriptfolder -n ".join(",",@script_names)." --tandem -t $task --ncpus $ncpus -r ";
-
-if(defined $mem && length($mem)>0) {
-	$clustercommand.=" -m $mem";
-}
-
-print SOUT $clustercommand,"\n";
-close SOUT;
-
-
-
-if($runmode eq "none") {
-	print STDERR "\nTo run locally, in shell type: sh $scriptlocalrun\n";
-	print STDERR "To run in cluster, in shell type: sh $scriptclusterrun\n";
-	
-	print LOG "\nTo run locally, in shell type: sh $scriptlocalrun\n";
-	print LOG "To run in cluster, in shell type: sh $scriptclusterrun\n";
-}
-elsif($runmode eq "local") {
-	#local mode
-	#implemented for Falco
-	
-	system("sh $scriptlocalrun");
-	print LOG "sh $scriptlocalrun;\n\n";
-
-	print STDERR "Starting local paralleled processing using $jobnumber tasks. To monitor process, use \"screen -r $jobname\".\n\n";
-	print LOG "Starting local paralleled processing using $jobnumber tasks. To monitor process, use \"screen -r $jobname\".\n\n";
-	
-}
-elsif($runmode eq "cluster") {
-	#cluster mode
-	#implement for Firefly
-	
-	system("sh $scriptclusterrun");
-	print LOG "sh $scriptclusterrun;\n\n";
-
-	print STDERR "Starting cluster paralleled processing using $jobnumber tasks. To monitor process, use \"squeue\".\n\n";
-
-}
+submit_job($scriptfile1,$scriptfile2);
 
 close LOG;
 
@@ -743,5 +775,108 @@ sub get_parent_folder {
 	
 	if($dir=~/^(.+\/)[^\/]+\/?/) {
 		return $1;
+	}
+}
+
+
+sub submit_job {
+	
+	#lots of global variables. May need to be passed on in future implementation
+	#$scriptlocalrun, $scriptclusterrun
+	#$ppn, $task, $nodes, $runmode, LOG
+	
+	
+	#only line needs to be changed for other scripts
+	my @scripts_all=@_;
+
+
+	open(LOUT,">$scriptlocalrun") || die "ERROR:can't write to $scriptlocalrun. $!";
+	open(SOUT,">$scriptclusterrun") || die "ERROR:can't write to $scriptclusterrun. $!";
+	
+	#####
+	#print out command for local parallel runs
+	#####
+	
+	my $jobnumber=0;
+	my $jobname="omictools-$timestamp";
+
+	if($task eq "auto") {
+		$jobnumber=0; #0 means as many as possible
+	}
+	else {
+		$jobnumber=$task;
+	}
+
+	my @local_runs;
+	my @script_names;
+
+	foreach my $script (@scripts_all) {
+		push @local_runs,"cat $script | parallel -j $jobnumber";
+
+		if($script=~/([^\/]+)\.\w+$/) {
+			push @script_names,$1;
+		}
+	}
+
+	my $localcommand="screen -S $jobname -dm bash -c \"source ~/.bashrc;".join(";",@local_runs).";\"";
+
+	print LOUT $localcommand,"\n";
+	close LOUT;
+	
+	#####
+	#print out command for cluster parallel runs
+	#####
+	
+	my $clustercommand="perl $parallel_job -i ".join(",", @scripts_all)." -o $scriptfolder -n ".join(",",@script_names)." --tandem -t $task --env -r "; #changed here for none version
+
+
+	if(defined $ppn && length($ppn)>0) {
+		if(defined $nodes && length($nodes)>0) {
+			$clustercommand.=" --nodes $nodes --ppn $ppn";		
+		}
+		else {
+			$clustercommand.=" --nodes 1 --ppn $ppn";	
+		}
+	}
+	else {
+		$clustercommand.=" --ncpus $ncpus";	
+	}
+
+	if(defined $mem && length($mem)>0) {
+		$clustercommand.=" -m $mem";	
+	}
+
+	print SOUT $clustercommand,"\n";
+	close SOUT;
+
+
+
+	if($runmode eq "none") {
+		print STDERR "\nTo run locally, in shell type: sh $scriptlocalrun\n";
+		print STDERR "To run in cluster, in shell type: sh $scriptclusterrun\n";
+		
+		print LOG "\nTo run locally, in shell type: sh $scriptlocalrun\n";
+		print LOG "To run in cluster, in shell type: sh $scriptclusterrun\n";
+	}
+	elsif($runmode eq "local") {
+		#local mode
+		#implemented for local execution
+		
+		system("sh $scriptlocalrun");
+		print LOG "sh $scriptlocalrun;\n\n";
+
+		print STDERR "Starting local paralleled processing using $jobnumber tasks. To monitor process, use \"screen -r $jobname\".\n\n";
+		print LOG "Starting local paralleled processing using $jobnumber tasks. To monitor process, use \"screen -r $jobname\".\n\n";
+		
+	}
+	elsif($runmode eq "cluster") {
+		#cluster mode
+		#implement for HPC execution
+		
+		system("sh $scriptclusterrun");
+		print LOG "sh $scriptclusterrun;\n\n";
+
+		print STDERR "Starting cluster paralleled processing using $jobnumber tasks. To monitor process, use \"squeue\".\n\n";
+
 	}
 }

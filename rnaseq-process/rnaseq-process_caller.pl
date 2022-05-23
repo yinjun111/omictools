@@ -12,7 +12,7 @@ use File::Basename qw(basename dirname);
 ########
 
 
-my $version="1.0";
+my $version="1.1";
 
 #0.2b change ensembl to UCSC format
 #0.2c add bw generation
@@ -37,6 +37,7 @@ my $version="1.0";
 #v0.71, smartseq tag
 #v0.8, add exon and exon junction count by subread
 #v1.0, change STAR location, slurm tested
+#v1.1, convert job submission into submit_job function 
 
 my $usage="
 
@@ -73,11 +74,11 @@ Parameters:
                                    you can use \"sh rnaseq-merge_local_submission.sh\" to run locally, or
                                    you can use \"sh rnaseq-merge_cluster_submission.sh\" to submit job to PBS
 
-    #Parameters for PBS
+    #Parameters for HPC
 
     --task            Number of tasks to be paralleled. By default 4 tasks for local mode. For cluster mode, it is the number of samples in configuration file.
 
-    --mem|-m          Memory usage for each process, e.g. 100mb, 100gb [40gb]
+    --mem|-m          Deprecated for Slurm. Memory usage for each process, e.g. 100mb, 100gb [40gb]
 	
     For each task, there are two ways of specifying the computing resource,
       but you can't mix --nodes and --ncpus together.
@@ -696,100 +697,7 @@ close S1;
 #Run mode
 #######
 
-open(LOUT,">$scriptlocalrun") || die "ERROR:can't write to $scriptlocalrun. $!";
-open(SOUT,">$scriptclusterrun") || die "ERROR:can't write to $scriptclusterrun. $!";
-
-
-my @scripts_all=($scriptfile1);
-
-
-#print out command for local and cluster parallel runs
-my $jobnumber=0;
-my $jobname="rnaseq-process-$timestamp";
-
-if($task eq "auto") {
-	$jobnumber=0;
-}
-else {
-	$jobnumber=$task;
-}
-
-my @local_runs;
-my @script_names;
-
-foreach my $script (@scripts_all) {
-	push @local_runs,"cat $script | parallel -j $jobnumber";
-
-	if($script=~/([^\/]+)\.\w+$/) {
-		push @script_names,$1;
-	}
-}
-
-my $localcommand="screen -S $jobname -dm bash -c \"source ~/.bashrc;".join(";",@local_runs).";\"";
-
-print LOUT $localcommand,"\n";
-close LOUT;
-
-#print out command for cluster parallel runs
-
-my $clustercommand="perl $parallel_job -i ".join(",", @scripts_all)." -o $scriptfolder -n ".join(",",@script_names)." --tandem -t $task --env"; #changed here for none version
-
-
-if(defined $ppn && length($ppn)>0) {
-	if(defined $nodes && length($nodes)>0) {
-		$clustercommand.=" --nodes $nodes --ppn $ppn";		
-	}
-	else {
-		$clustercommand.=" --nodes 1 --ppn $ppn";	
-	}
-}
-else {
-	$clustercommand.=" --ncpus $ncpus";	
-}
-
-if(defined $mem && length($mem)>0) {
-	$clustercommand.=" -m $mem";	
-}
-
-
-
-print SOUT "sh $outputfolder/scripts/parallel-job_submit.sh\n"; #submit step
-close SOUT;
-
-
-system("$clustercommand");
-print LOG "$clustercommand;\n\n";
-
-
-
-if($runmode eq "none") {
-	print STDERR "\nTo run locally, in shell type: sh $scriptlocalrun\n";
-	print STDERR "To run in cluster, in shell type: sh $scriptclusterrun\n";
-	
-	print LOG "\nTo run locally, in shell type: sh $scriptlocalrun\n";
-	print LOG "To run in cluster, in shell type: sh $scriptclusterrun\n";
-}
-elsif($runmode eq "local") {
-	#local mode
-	#implemented for Falco
-	
-	system("sh $scriptlocalrun");
-	print LOG "sh $scriptlocalrun;\n\n";
-
-	print STDERR "Starting local paralleled processing using $jobnumber tasks. To monitor process, use \"screen -r $jobname\".\n\n";
-	print LOG "Starting local paralleled processing using $jobnumber tasks. To monitor process, use \"screen -r $jobname\".\n\n";
-	
-}
-elsif($runmode eq "cluster") {
-	#cluster mode
-	#implement for Torque
-	
-	system("sh $scriptclusterrun");
-	print LOG "sh $scriptclusterrun;\n\n";
-
-	print STDERR "Starting cluster paralleled processing using $jobnumber tasks. To monitor process, use \"squeue\".\n\n";
-
-}
+submit_job($scriptfile1);
 
 close LOG;
 
@@ -865,4 +773,105 @@ sub get_parent_folder {
 }
 
 
+sub submit_job {
+	
+	#lots of global variables. May need to be passed on in future implementation
+	#$scriptlocalrun, $scriptclusterrun
+	#$ppn, $task, $nodes, $runmode, LOG
+	
+	
+	#only line needs to be changed for other scripts
+	my @scripts_all=@_;
+
+
+	open(LOUT,">$scriptlocalrun") || die "ERROR:can't write to $scriptlocalrun. $!";
+	open(SOUT,">$scriptclusterrun") || die "ERROR:can't write to $scriptclusterrun. $!";
+	
+	#####
+	#print out command for local parallel runs
+	#####
+	
+	my $jobnumber=0;
+	my $jobname="omictools-$timestamp";
+	
+	if($task eq "auto") {
+		$jobnumber=0; #0 means as many as possible
+	}
+	else {
+		$jobnumber=$task;
+	}
+
+	my @local_runs;
+	my @script_names;
+
+	foreach my $script (@scripts_all) {
+		push @local_runs,"cat $script | parallel -j $jobnumber";
+
+		if($script=~/([^\/]+)\.\w+$/) {
+			push @script_names,$1;
+		}
+	}
+
+	my $localcommand="screen -S $jobname -dm bash -c \"source ~/.bashrc;".join(";",@local_runs).";\"";
+
+	print LOUT $localcommand,"\n";
+	close LOUT;
+	
+	#####
+	#print out command for cluster parallel runs
+	#####
+	
+	my $clustercommand="perl $parallel_job -i ".join(",", @scripts_all)." -o $scriptfolder -n ".join(",",@script_names)." --tandem -t $task --env -r "; #changed here for none version
+
+
+	if(defined $ppn && length($ppn)>0) {
+		if(defined $nodes && length($nodes)>0) {
+			$clustercommand.=" --nodes $nodes --ppn $ppn";		
+		}
+		else {
+			$clustercommand.=" --nodes 1 --ppn $ppn";	
+		}
+	}
+	else {
+		$clustercommand.=" --ncpus $ncpus";	
+	}
+
+	if(defined $mem && length($mem)>0) {
+		$clustercommand.=" -m $mem";	
+	}
+
+	print SOUT $clustercommand,"\n";
+	close SOUT;
+
+
+
+	if($runmode eq "none") {
+		print STDERR "\nTo run locally, in shell type: sh $scriptlocalrun\n";
+		print STDERR "To run in cluster, in shell type: sh $scriptclusterrun\n";
+		
+		print LOG "\nTo run locally, in shell type: sh $scriptlocalrun\n";
+		print LOG "To run in cluster, in shell type: sh $scriptclusterrun\n";
+	}
+	elsif($runmode eq "local") {
+		#local mode
+		#implemented for local execution
+		
+		system("sh $scriptlocalrun");
+		print LOG "sh $scriptlocalrun;\n\n";
+
+		print STDERR "Starting local paralleled processing using $jobnumber tasks. To monitor process, use \"screen -r $jobname\".\n\n";
+		print LOG "Starting local paralleled processing using $jobnumber tasks. To monitor process, use \"screen -r $jobname\".\n\n";
+		
+	}
+	elsif($runmode eq "cluster") {
+		#cluster mode
+		#implement for HPC execution
+		
+		system("sh $scriptclusterrun");
+		print LOG "sh $scriptclusterrun;\n\n";
+
+		print STDERR "Starting cluster paralleled processing using $jobnumber tasks. To monitor process, use \"squeue\".\n\n";
+
+	}
+}
 

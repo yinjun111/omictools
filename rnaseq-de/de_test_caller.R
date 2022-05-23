@@ -10,7 +10,7 @@ library(argparser,quietly =T)
 #Version
 ####
 
-version="0.7"
+version="0.72"
 
 #0.2b, change auto filter to *5. Add indfilter and cookscutoff option
 #0.23, add write_table_proper
@@ -25,7 +25,8 @@ version="0.7"
 #0.63, change library calling lcoations
 #0.64, fix bug for group names starting with numbers
 #0.7, add LM based analysis for Splicing Index etc.
-
+#0.71, change significance column name
+#0.72, add inf removal
 
 description=paste0("de_test\nversion ",version,"\n","Usage:\nDescription: Differential Expression calculation\n")
 
@@ -85,9 +86,9 @@ library(Cairo,quietly =T)
 
 
 filter_data <- function(mat,type="sum",cutoff=10,na.rm=0) {
-	#remove NA
+	#remove NA and Inf
+	is.na(mat) <- sapply(mat, is.infinite)
 	mat[is.na(mat)]<-na.rm
-
 
 	if(cutoff=="auto") {
 	  num.cutoff<-ncol(mat)*5 # count cutoff eq two times number of samples #changed to *5 3/26
@@ -214,7 +215,7 @@ deseq2_test_v1 <- function(mat,anno,design,fc_cutoff=1,q_cutoff=0.05,pmethod="Wa
 
 	mat.result<-cbind(fc,stat,p,q,sig)
 	
-	colnames(mat.result)<-c(values(res)[[2]][2],"DESeq2 Stat:Mean,SE,Wald stat",values(res)[[2]][5],values(res)[[2]][6],paste("Significance: Abs(Log2FC)>=",round(fc_cutoff,3)," ",qmethod, "P<",q_cutoff,sep=""))
+	colnames(mat.result)<-c(values(res)[[2]][2],"DESeq2 Stat:Mean,SE,Wald stat",values(res)[[2]][5],values(res)[[2]][6],paste("Significance: ",treat," vs ",ref," Abs(Log2FC)>=",round(fc_cutoff,3)," ",qmethod, "P<",q_cutoff,sep=""))
 	
 	
 	
@@ -249,10 +250,12 @@ lm_test <- function(mat,anno,design,fc_cutoff=1,q_cutoff=0.05,pmethod="Wald",qme
 	design.mm<-data.frame(anno[,design.vars])
 	colnames(design.mm)<-design.vars
 	
-	#remove NA
+	#remove NA and Inf
+	is.na(mat) <- sapply(mat, is.infinite)
 	mat[is.na(mat)]=na.rm	
 	
 	#lm test here
+	#can be replaced by parallel implementation
 	res<-t(apply(mat,1,function(x) {
 		d<-data.frame(cbind(x,design.mm))
 		lm.form<-as.formula(paste("x",design))
@@ -303,7 +306,7 @@ lm_test <- function(mat,anno,design,fc_cutoff=1,q_cutoff=0.05,pmethod="Wald",qme
 
 	mat.result<-cbind(fc,stat,p,q,sig)
 	
-	colnames(mat.result)<-c(paste0("Log2FC ",treat," vs ",ref),"Stat:F","P",paste(qmethod,"P"),paste("Significance: Abs(Log2FC)>=",round(fc_cutoff,3)," ",qmethod, "P<",q_cutoff,sep=""))
+	colnames(mat.result)<-c(paste0("Log2FC ",treat," vs ",ref),"Stat:F","P",paste(qmethod,"P"),paste("Significance: ",treat," vs ",ref," Abs(Log2FC)>=",round(fc_cutoff,3)," ",qmethod, "P<",q_cutoff,sep=""))
 	
 	result<-list()
 	result$result=mat.result

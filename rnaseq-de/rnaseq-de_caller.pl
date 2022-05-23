@@ -11,7 +11,7 @@ use File::Basename qw(basename dirname);
 ########
 
 
-my $version="1.0";
+my $version="1.2";
 
 #version 0.2a, add r version log
 #v0.3 add runmode
@@ -19,13 +19,15 @@ my $version="1.0";
 #v0.4, add server option, updating r script
 #v0.5, use R 4.0.2, add comparison argument for multiple comparisons
 #v0.51, versioning
-#v0.6, major updates planned for R4.0, comparisons of multiple groups. turn off txde
+#v0.6, major updates planned for R4.0, comparisons of multiple groups. turn off as
 #v0.61, adding -s for --comparisons
 #v0.7, v88 and AWS
 #v0.8, support complicated GLM
 #v0.81, add idf and cc options
 #v0.9, add rat annotation, change default I/O names
 #v1.0, fix for slurm envir, slurm tested
+#v1.1, add AS calculation
+#v1.2, add exon AS. add submit_job
 
 my $usage="
 
@@ -33,7 +35,7 @@ rnaseq-de
 version: $version
 Usage: omictools rnaseq-de [parameters]
 
-Description: Differential Expression (DE) tests using DESeq2. This script works for most of the counting based data, e.g. RNA-Seq, ChIP-Seq, ATAC-Seq
+Description: Differential Expression (DE) and Alternative Splicing (AS) analyses. The DE analysis script works for most of the counting based data, e.g. RNA-Seq, ChIP-Seq, ATAC-Seq
 
 
 Mandatory Parameters:
@@ -62,7 +64,7 @@ Mandatory Parameters:
 
 						
 Optional Parameters:
-    --pmethod         DESeq2 method, default as Wald test [Wald]
+    --pmethod         DESeq2 method, default as Wald test [DESeq2-Wald]
     --qmethod         Multiple testing correction method [BH]
 
     --useallsamples   Use all samples in config file for 
@@ -76,13 +78,36 @@ Optional Parameters:
     --fccutoff        Log2 FC cutoff [1]
     --qcutoff         Corrected P cutoff [0.05]
 
+
+    #DESeq2 specific
     --independentfiltering   Apply independentfiltering in DESeq2 [T]
     --cookscutoff            Apply Cook\'s cutoff  in DESeq2 [T]
 
-    --txde            Run DE tests for Tx [F]
+Alternative Splicing Analyses Parameters:
+    --as              Run Tx DE/AS tests for alternative splicing analyses for tx and exon [F]
+
+
+#Parameters for HPC
+
+    --task            Number of tasks to be paralleled. By default by the number of commands in submitted jobs.
+
+    --mem|-m          Deprecated for Slurm. Memory usage for each process, e.g. 100mb, 100gb [40gb]
+	
+    For each task, there are two ways of specifying the computing resource,
+      but you can't mix --nodes and --ncpus together.
+	A) by specifying number of nodes and process (default)
+    --nodes           The value can be A) No. of nodes for each task
+                                       B) Name of the node, e.g. n001.cluster.com                        
+    --ppn             No. of processes for each task. By default [4]
+                         Default for rnaseq-process
+	
+	B) by specifying the total number of cpus
+    --ncpus           No. of cpus for each task for tasks can't use multiple nodes
+
+
 
     --runmode|-r      Where to run the scripts, local or none [none]
-                           Note: cluster doesn't work for now, due to R pkg dependency
+                           Note: cluster doesn't work for now for rnaseq-de, due to R pkg dependency
 
 
 ";
@@ -137,7 +162,7 @@ my $qmethod="BH";
 my $useallsamples="F";
 my $filter="auto";
 
-my $txde="F";
+my $as="F";
 my $fccutoff=1;
 my $qcutoff=0.05;
 my $independentfiltering="T";
@@ -145,8 +170,10 @@ my $cookscutoff="T";
 
 
 my $verbose=1;
-my $task=5;
+my $task;
 my $ncpus=2;
+my $ppn=6;
+my $nodes;
 my $mem;
 
 my $dev=0; #developmental version 
@@ -173,13 +200,16 @@ GetOptions(
 	"fccutoff=s" => \$fccutoff,
 	"qcutoff=s" => \$qcutoff,
 	
-	"txde=s" => \$txde,
+	"as=s" => \$as,
 	"independentfiltering=s" => \$independentfiltering,
 	"cookscutoff=s" => \$cookscutoff,	
 	
 	"tx|t=s" => \$tx,	
 	"runmode|r=s" => \$runmode,		
 	"task=s" => \$task,	
+	"ppn=s" => \$ppn,
+	"nodes=s" => \$nodes,
+	"ncpus=s" => \$ncpus,	
 	"verbose|v" => \$verbose,
 
 	"dev" => \$dev,		
@@ -188,6 +218,9 @@ GetOptions(
 ########
 #Prerequisites
 ########
+my $r=find_program("/apps/R-4.0.2/bin/R");
+my $rscript=find_program("/apps/R-4.0.2/bin/Rscript");
+
 
 my $omictoolsfolder="/apps/omictools/";
 
@@ -202,13 +235,13 @@ if($dev) {
 
 
 #omictools
-my $descript="$omictoolsfolder/rnaseq-de/de_test_caller.R";
-my $mergefiles="$omictoolsfolder/mergefiles/mergefiles_caller.pl";
-my $parallel_job="$omictoolsfolder/parallel-job/parallel-job_caller.pl";
+my $descript="$rscript $omictoolsfolder/rnaseq-de/de_test_caller.R";
+my $summarize_txsi="perl $omictoolsfolder/rnaseq-de/summarize_txsi.pl";
+my $summarize_exonsi="perl $omictoolsfolder/rnaseq-de/summarize_exonsi.pl";
+my $mergefiles="perl $omictoolsfolder/mergefiles/mergefiles_caller.pl";
+my $parallel_job="perl $omictoolsfolder/parallel-job/parallel-job_caller.pl";
 
 
-my $r=find_program("/apps/R-4.0.2/bin/R");
-my $rscript=find_program("/apps/R-4.0.2/bin/Rscript");
 
 #my $r=find_program("/apps/R-3.4.1/bin/R");
 #my $rscript=find_program("/apps/R-3.4.1/bin/Rscript");
@@ -242,7 +275,8 @@ my $logfile="$outputfolder/rnaseq-de_run.log";
 
 my $rlogfile="$outputfolder/rnaseq-de_r_env.log";
 
-my $scriptfile1="$scriptfolder/rnaseq-de_run.sh";
+my $scriptfile1="$scriptfolder/rnaseq-de_run1.sh";
+my $scriptfile2="$scriptfolder/rnaseq-de_run2.sh";
 
 my $scriptlocalrun="$outputfolder/rnaseq-de_local_submission.sh";
 my $scriptclusterrun="$outputfolder/rnaseq-de_cluster_submission.sh";
@@ -295,7 +329,6 @@ close RLOG;
 
 
 ##test tx option
-#may need to change for different annotation versions
 
 my %tx2ref=(
 	"Human.B38.Ensembl88"=> { 
@@ -306,7 +339,8 @@ my %tx2ref=(
 		"gtf"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.88_ucsc.gtf",
 		"homeranno"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.88_ucsc_homeranno.txt",
 		"geneanno"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.88_ucsc_gene_annocombo.txt",
-		"txanno"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.88_ucsc_tx_annocombo.txt"},
+		"txanno"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.88_ucsc_tx_annocombo.txt",
+		"exonanno"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.88_ucsc_exon_annocombo.txt",},
 	"Mouse.B38.Ensembl88"=>{ 
 		"star"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mouse.B38.Ensembl88_STAR",
 		"rsem"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mouse.B38.Ensembl88_STAR/Mouse_RSEM",
@@ -315,7 +349,8 @@ my %tx2ref=(
 		"gtf"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc.gtf",
 		"homeranno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_homeranno.txt",
 		"geneanno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_gene_annocombo.txt",
-		"txanno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_tx_annocombo.txt"},
+		"txanno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_tx_annocombo.txt",
+		"exonanno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_exon_annocombo.txt"},
 	"Rat.Rn6.Ensembl88"=>{ 
 		"star"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rat.Rn6.Ensembl88_STAR",
 		"rsem"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rat.Rn6.Ensembl88_STAR/Rat_RSEM",
@@ -323,8 +358,10 @@ my %tx2ref=(
 		"fasta"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rattus_norvegicus.Rnor_6.0.dna.toplevel_ucsc.fa",
 		"gtf"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rattus_norvegicus.Rnor_6.0.88_ucsc.gtf",
 		"geneanno"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rattus_norvegicus.Rnor_6.0.88_ucsc_gene_annocombo.txt",
-		"txanno"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rattus_norvegicus.Rnor_6.0.88_ucsc_tx_annocombo.txt"}		
+		"txanno"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rattus_norvegicus.Rnor_6.0.88_ucsc_tx_annocombo.txt",
+		"exonanno"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rattus_norvegicus.Rnor_6.0.88_ucsc_exon_annocombo.txt"}
 );
+
 
 
 if(defined $tx2ref{$tx}) {
@@ -343,7 +380,7 @@ else {
 #my $genecountmerged="gene.results.merged.count.txt";
 #my $txcountmerged="tx.results.merged.count.txt";
 #my $genederesult="gene.results.merged.count.DESeq2.$pmethod.FC$fccutoff.$qmethod.P$qcutoff.txt";
-#my $txderesult="tx.results.merged.count.DESeq2.$pmethod.FC$fccutoff.$qmethod.P$qcutoff.txt";
+#my $asresult="tx.results.merged.count.DESeq2.$pmethod.FC$fccutoff.$qmethod.P$qcutoff.txt";
 
 
 my %rnaseq2files=(
@@ -355,10 +392,28 @@ my %rnaseq2files=(
 	},
 	"tx"=> { 
 		"count"=> "tx.results.merged.count.txt",
+		"si"=> "tx.results.merged.tpm.si.txt",		
 		"selected"=> "tx.results.merged.count.selected.txt",
+		"siselected"=> "tx.results.merged.tpm.si.selected.txt",				
 		"result"=> "tx.results.merged.count.DESeq2.$pmethod.FC$fccutoff.$qmethod.P$qcutoff.txt",
+		"siresult"=> "tx.results.merged.tpm.si.Lm.FC$fccutoff.$qmethod.P$qcutoff.txt",
 		"resultanno"=> "tx.results.merged.count.DESeq2.$pmethod.FC$fccutoff.$qmethod.P$qcutoff.anno.txt",
-	}
+		"siresultanno"=> "tx.results.merged.tpm.si.Lm.FC$fccutoff.$qmethod.P$qcutoff.anno.txt",
+		"siresultsummary"=> "tx.results.merged.tpm.si.summary.txt",
+		"siresultsummaryanno"=> "tx.results.merged.tpm.si.summary.anno.txt",
+	},
+	"exon"=> { 
+		"count"=> "exon.results.merged.count.txt",
+		"si"=> "exon.results.merged.count.si.txt",		
+		"selected"=> "exon.results.merged.count.selected.txt",
+		"siselected"=> "exon.results.merged.count.si.selected.txt",				
+		"result"=> "exon.results.merged.count.DESeq2.$pmethod.FC$fccutoff.$qmethod.P$qcutoff.txt",
+		"siresult"=> "exon.results.merged.count.si.Lm.FC$fccutoff.$qmethod.P$qcutoff.txt",
+		"resultanno"=> "exon.results.merged.count.DESeq2.$pmethod.FC$fccutoff.$qmethod.P$qcutoff.anno.txt",
+		"siresultanno"=> "exon.results.merged.count.si.Lm.FC$fccutoff.$qmethod.P$qcutoff.anno.txt",
+		"siresultsummary"=> "exon.results.merged.count.si.summary.txt",
+		"siresultsummaryanno"=> "exon.results.merged.count.si.summary.anno.txt",
+	}	
 );
 
 
@@ -373,7 +428,8 @@ my %chip2files=(
 	"tx"=> { 
 		"count"=> "tx.results.merged.count.txt",
 		"selected"=> "tx.results.merged.count.selected.txt",
-		"result"=> "tx.results.merged.count.DESeq2.$pmethod.FC$fccutoff.$qmethod.P$qcutoff.txt"
+		"result"=> "tx.results.merged.count.DESeq2.$pmethod.FC$fccutoff.$qmethod.P$qcutoff.txt",
+		"siresult"=> "tx.results.merged.tpm.si.Lm.FC$fccutoff.$qmethod.P$qcutoff.txt"
 	}
 );
 
@@ -434,10 +490,21 @@ else {
 	push @refs,$reference;
 }
 
+#-------------
+#sanity check for --as
+
+if($as eq "T") {
+	unless(-e "$inputfolder/".$rnaseq2files{"exon"}{"count"}) {
+		print STDERR "ERROR:no exon count file found: ","$inputfolder/".$rnaseq2files{"exon"}{"count"},". You will need to run rnaseq-merge using --as T.\n";
+		print LOG "ERROR:no exon count file found: ","$inputfolder/".$rnaseq2files{"exon"}{"count"},". You will need to run rnaseq-merge using --as T.\n";
+		exit;
+	}
+}
 
 		
 #----------------
 open(S1,">$scriptfile1") || die "Error writing $scriptfile1. $!";
+open(S2,">$scriptfile2") || die "Error writing $scriptfile2. $!";
 
 for(my $compnum=0;$compnum<@trts;$compnum++) {
 
@@ -595,8 +662,11 @@ for(my $compnum=0;$compnum<@trts;$compnum++) {
 		
 		system("cp $inputfolder/".$rnaseq2files{"gene"}{"count"}." $outputfolder_de/".$rnaseq2files{"gene"}{"selected"});
 		
-		if($txde eq "T") {
+		if($as eq "T") {
 			system("cp $inputfolder/".$rnaseq2files{"tx"}{"count"}." $outputfolder_de/".$rnaseq2files{"tx"}{"selected"});
+			system("cp $inputfolder/".$rnaseq2files{"tx"}{"si"}." $outputfolder_de/".$rnaseq2files{"tx"}{"siselected"});
+			system("cp $inputfolder/".$rnaseq2files{"exon"}{"count"}." $outputfolder_de/".$rnaseq2files{"exon"}{"selected"});
+			system("cp $inputfolder/".$rnaseq2files{"exon"}{"si"}." $outputfolder_de/".$rnaseq2files{"exon"}{"siselected"});			
 		}
 	}
 	else {
@@ -609,8 +679,18 @@ for(my $compnum=0;$compnum<@trts;$compnum++) {
 
 		system("cut -f 1,".join(",",@sampleselrows)." $inputfolder/".$rnaseq2files{"gene"}{"count"}." > $outputfolder_de/".$rnaseq2files{"gene"}{"selected"});
 		
-		if($txde eq "T") {
+		if($as eq "T") {
+			#for DE
 			system("cut -f 1,".join(",",@sampleselrows)." $inputfolder/".$rnaseq2files{"tx"}{"count"}." > $outputfolder_de/".$rnaseq2files{"tx"}{"selected"});
+			
+			#for SI
+			system("cut -f 1,".join(",",@sampleselrows)." $inputfolder/".$rnaseq2files{"tx"}{"si"}." > $outputfolder_de/".$rnaseq2files{"tx"}{"siselected"});	
+
+			#for DE
+			system("cut -f 1,".join(",",@sampleselrows)." $inputfolder/".$rnaseq2files{"exon"}{"count"}." > $outputfolder_de/".$rnaseq2files{"exon"}{"selected"});
+			
+			#for SI
+			system("cut -f 1,".join(",",@sampleselrows)." $inputfolder/".$rnaseq2files{"exon"}{"si"}." > $outputfolder_de/".$rnaseq2files{"exon"}{"siselected"});				
 		}
 	}
 
@@ -623,23 +703,68 @@ for(my $compnum=0;$compnum<@trts;$compnum++) {
 	#}
 
 	#Gene #changed after v0.6
-	print S1 "$rscript $descript -i $outputfolder_de/",$rnaseq2files{"gene"}{"selected"}," -c $newconfigfile -o $outputfolder_de/",$rnaseq2files{"gene"}{"result"}," -f \"$formula\" -t $trt -r $ref --fccutoff $fccutoff --qcutoff $qcutoff --qmethod $qmethod --pmethod $pmethod --filter $filter -a ",$tx2ref{$tx}{"geneanno"}," --independentfiltering $independentfiltering --cookscutoff $cookscutoff > $outputfolder_de/gene_de_test_run.log 2>&1;"; #need to check here #add r script running log
+	print S1 "$descript -i $outputfolder_de/",$rnaseq2files{"gene"}{"selected"}," -c $newconfigfile -o $outputfolder_de/",$rnaseq2files{"gene"}{"result"}," -f \"$formula\" -t $trt -r $ref --fccutoff $fccutoff --qcutoff $qcutoff --qmethod $qmethod --pmethod $pmethod --filter $filter -a ",$tx2ref{$tx}{"geneanno"}," --independentfiltering $independentfiltering --cookscutoff $cookscutoff > $outputfolder_de/gene_de_test_run.log 2>&1;"; #need to check here #add r script running log
 
 	#Gene anno
 	print S1 "$mergefiles -m $outputfolder_de/",$rnaseq2files{"gene"}{"result"}," -i ".$tx2ref{$tx}{"geneanno"}." -o $outputfolder_de/",$rnaseq2files{"gene"}{"resultanno"},";\n";
 
 
-	if($txde eq "T") {
-		#Tx
-		print S1 "$rscript $descript -i $outputfolder_de/",$rnaseq2files{"tx"}{"selected"}," -c $newconfigfile -o $outputfolder_de/",$rnaseq2files{"tx"}{"result"}," -f \"$formula\" -t $trt -r $ref --fccutoff $fccutoff --qcutoff $qcutoff --qmethod $qmethod --pmethod $pmethod --filter $filter --independentfiltering $independentfiltering --cookscutoff $cookscutoff > $outputfolder_de/tx_de_test_run.log 2>&1;";
+	if($as eq "T") {
+		#Tx DE #whether to lower TX DE cutoff?
+		print S1 "$descript -i $outputfolder_de/",$rnaseq2files{"tx"}{"selected"}," -c $newconfigfile -o $outputfolder_de/",$rnaseq2files{"tx"}{"result"}," -f \"$formula\" -t $trt -r $ref --fccutoff $fccutoff --qcutoff $qcutoff --qmethod $qmethod --pmethod $pmethod --filter $filter --independentfiltering $independentfiltering --cookscutoff $cookscutoff > $outputfolder_de/tx_de_test_run.log 2>&1;";
 
 		#tx anno
 		print S1 "$mergefiles -m $outputfolder_de/",$rnaseq2files{"tx"}{"result"}," -i ".$tx2ref{$tx}{"txanno"}." -o $outputfolder_de/",$rnaseq2files{"tx"}{"resultanno"},";\n";
-	}
+		
+		#Tx AS
+		print S1 "$descript -i $outputfolder_de/",$rnaseq2files{"tx"}{"siselected"}," -c $newconfigfile -o $outputfolder_de/",$rnaseq2files{"tx"}{"siresult"}," -f \"$formula\" -t $trt -r $ref --fccutoff $fccutoff --qcutoff $qcutoff --qmethod $qmethod --pmethod Lm --filter 0.001 > $outputfolder_de/tx_as_test_run.log 2>&1;";
 
+		#tx AS anno
+		print S1 "$mergefiles -m $outputfolder_de/",$rnaseq2files{"tx"}{"siresult"}," -i ".$tx2ref{$tx}{"txanno"}." -o $outputfolder_de/",$rnaseq2files{"tx"}{"siresultanno"},";\n";		
+	
+		#tx AS summary
+		print S2 "$summarize_txsi --tx $tx -g $outputfolder_de/",$rnaseq2files{"gene"}{"result"}," --td $outputfolder_de/",$rnaseq2files{"tx"}{"result"}," --ts $outputfolder_de/",$rnaseq2files{"tx"}{"siresultanno"}," --ed $outputfolder_de/",$rnaseq2files{"exon"}{"result"}," --es $outputfolder_de/",$rnaseq2files{"exon"}{"siresultanno"}, " -o $outputfolder_de/",$rnaseq2files{"tx"}{"siresultsummary"}," > $outputfolder_de/tx_as_summary_run.log 2>&1;\n";
+
+
+		#exon DE #whether to lower exon DE cutoff?
+		print S1 "$descript -i $outputfolder_de/",$rnaseq2files{"exon"}{"selected"}," -c $newconfigfile -o $outputfolder_de/",$rnaseq2files{"exon"}{"result"}," -f \"$formula\" -t $trt -r $ref --fccutoff $fccutoff --qcutoff $qcutoff --qmethod $qmethod --pmethod $pmethod --filter $filter --independentfiltering $independentfiltering --cookscutoff $cookscutoff > $outputfolder_de/exon_de_test_run.log 2>&1;";
+
+		#exon anno
+		print S1 "$mergefiles -m $outputfolder_de/",$rnaseq2files{"exon"}{"result"}," -i ".$tx2ref{$tx}{"exonanno"}." -o $outputfolder_de/",$rnaseq2files{"exon"}{"resultanno"},";\n";
+		
+		#exon AS
+		print S1 "$descript -i $outputfolder_de/",$rnaseq2files{"exon"}{"siselected"}," -c $newconfigfile -o $outputfolder_de/",$rnaseq2files{"exon"}{"siresult"}," -f \"$formula\" -t $trt -r $ref --fccutoff $fccutoff --qcutoff $qcutoff --qmethod $qmethod --pmethod Lm --filter 0.001 > $outputfolder_de/exon_as_test_run.log 2>&1;";
+
+		#exon AS anno
+		print S1 "$mergefiles -m $outputfolder_de/",$rnaseq2files{"exon"}{"siresult"}," -i ".$tx2ref{$tx}{"exonanno"}." -o $outputfolder_de/",$rnaseq2files{"exon"}{"siresultanno"},";\n";		
+	
+		#exon AS summary
+		print S2 "$summarize_exonsi --tx $tx -g $outputfolder_de/",$rnaseq2files{"gene"}{"result"}," --td $outputfolder_de/",$rnaseq2files{"tx"}{"result"}," --ts $outputfolder_de/",$rnaseq2files{"tx"}{"siresultanno"}," --ed $outputfolder_de/",$rnaseq2files{"exon"}{"result"}," --es $outputfolder_de/",$rnaseq2files{"exon"}{"siresultanno"}, " -o $outputfolder_de/",$rnaseq2files{"exon"}{"siresultsummary"}," > $outputfolder_de/exon_as_summary_run.log 2>&1;\n";
+
+			
+	}
 }
 
 close S1;
+close S2;
+
+
+
+
+#tasks, local 4, cluster by number of samples
+unless(defined $task && length($task)>0) {
+	if($runmode eq "cluster") {
+		open(IN,$scriptfile1);
+		my @script1cont=<IN>;
+		my $scriptlines=scalar(@script1cont);
+		close IN;
+		print STDERR "\n$scriptlines commands detected in $scriptfile1. Use $scriptlines tasks in HPC.\n\n";
+		$task=$scriptlines;
+	}
+	else {
+		$task=4;
+	}
+}
 
 
 
@@ -647,80 +772,11 @@ close S1;
 #Run mode
 #######
 
-open(LOUT,">$scriptlocalrun") || die "ERROR:can't write to $scriptlocalrun. $!";
-open(SOUT,">$scriptclusterrun") || die "ERROR:can't write to $scriptclusterrun. $!";
-
-
-my @scripts_all=($scriptfile1);
-
-
-#print out command for local and cluster parallel runs
-my $jobnumber=0;
-my $jobname="rnaseq-de-$timestamp";
-
-if($task eq "auto") {
-	$jobnumber=0;
+if($as eq "F") {
+	submit_job($scriptfile1);
 }
 else {
-	$jobnumber=$task;
-}
-
-my @local_runs;
-my @script_names;
-
-foreach my $script (@scripts_all) {
-	push @local_runs,"cat $script | parallel -j $jobnumber";
-
-	if($script=~/([^\/]+)\.\w+$/) {
-		push @script_names,$1;
-	}
-}
-
-my $localcommand="screen -S $jobname -dm bash -c \"source ~/.bashrc;".join(";",@local_runs).";\"";
-
-print LOUT $localcommand,"\n";
-close LOUT;
-
-#print out command for cluster parallel runs
-
-my $clustercommand="perl $parallel_job -i ".join(",", @scripts_all)." -o $scriptfolder -n ".join(",",@script_names)." --tandem -t $task --ncpus $ncpus --env -r ";
-
-if(defined $mem && length($mem)>0) {
-	$clustercommand.=" -m $mem";	
-}
-
-print SOUT $clustercommand,"\n";
-close SOUT;
-
-
-
-if($runmode eq "none") {
-	print STDERR "\nTo run locally, in shell type: sh $scriptlocalrun\n";
-	print STDERR "To run in cluster, in shell type: sh $scriptclusterrun\n";
-	
-	print LOG "\nTo run locally, in shell type: sh $scriptlocalrun\n";
-	print LOG "To run in cluster, in shell type: sh $scriptclusterrun\n";
-}
-elsif($runmode eq "local") {
-	#local mode
-	#implemented for Falco
-	
-	system("sh $scriptlocalrun");
-	print LOG "sh $scriptlocalrun;\n\n";
-
-	print STDERR "Starting local paralleled processing using $jobnumber tasks. To monitor process, use \"screen -r $jobname\".\n\n";
-	print LOG "Starting local paralleled processing using $jobnumber tasks. To monitor process, use \"screen -r $jobname\".\n\n";
-	
-}
-elsif($runmode eq "cluster") {
-	#cluster mode
-	#implement for HPC
-	
-	system("sh $scriptclusterrun");
-	print LOG "sh $scriptclusterrun;\n\n";
-
-	print STDERR "Starting cluster paralleled processing using $jobnumber tasks. To monitor process, use \"squeue\".\n\n";
-
+	submit_job($scriptfile1,$scriptfile2);
 }
 
 close LOG;
@@ -795,5 +851,107 @@ sub get_parent_folder {
 	}
 }
 
+
+sub submit_job {
+	
+	#lots of global variables. May need to be passed on in future implementation
+	#$scriptlocalrun, $scriptclusterrun
+	#$ppn, $task, $nodes, $runmode, LOG
+	
+	
+	#only line needs to be changed for other scripts
+	my @scripts_all=@_;
+
+
+	open(LOUT,">$scriptlocalrun") || die "ERROR:can't write to $scriptlocalrun. $!";
+	open(SOUT,">$scriptclusterrun") || die "ERROR:can't write to $scriptclusterrun. $!";
+	
+	#####
+	#print out command for local parallel runs
+	#####
+	
+	my $jobnumber=0;
+	my $jobname="omictools-$timestamp";
+
+	if($task eq "auto") {
+		$jobnumber=0; #0 means as many as possible
+	}
+	else {
+		$jobnumber=$task;
+	}
+
+	my @local_runs;
+	my @script_names;
+
+	foreach my $script (@scripts_all) {
+		push @local_runs,"cat $script | parallel -j $jobnumber";
+
+		if($script=~/([^\/]+)\.\w+$/) {
+			push @script_names,$1;
+		}
+	}
+
+	my $localcommand="screen -S $jobname -dm bash -c \"source ~/.bashrc;".join(";",@local_runs).";\"";
+
+	print LOUT $localcommand,"\n";
+	close LOUT;
+	
+	#####
+	#print out command for cluster parallel runs
+	#####
+	
+	my $clustercommand="perl $parallel_job -i ".join(",", @scripts_all)." -o $scriptfolder -n ".join(",",@script_names)." --tandem -t $task --env -r "; #changed here for none version
+
+
+	if(defined $ppn && length($ppn)>0) {
+		if(defined $nodes && length($nodes)>0) {
+			$clustercommand.=" --nodes $nodes --ppn $ppn";		
+		}
+		else {
+			$clustercommand.=" --nodes 1 --ppn $ppn";	
+		}
+	}
+	else {
+		$clustercommand.=" --ncpus $ncpus";	
+	}
+
+	if(defined $mem && length($mem)>0) {
+		$clustercommand.=" -m $mem";	
+	}
+
+	print SOUT $clustercommand,"\n";
+	close SOUT;
+
+
+
+	if($runmode eq "none") {
+		print STDERR "\nTo run locally, in shell type: sh $scriptlocalrun\n";
+		print STDERR "To run in cluster, in shell type: sh $scriptclusterrun\n";
+		
+		print LOG "\nTo run locally, in shell type: sh $scriptlocalrun\n";
+		print LOG "To run in cluster, in shell type: sh $scriptclusterrun\n";
+	}
+	elsif($runmode eq "local") {
+		#local mode
+		#implemented for local execution
+		
+		system("sh $scriptlocalrun");
+		print LOG "sh $scriptlocalrun;\n\n";
+
+		print STDERR "Starting local paralleled processing using $jobnumber tasks. To monitor process, use \"screen -r $jobname\".\n\n";
+		print LOG "Starting local paralleled processing using $jobnumber tasks. To monitor process, use \"screen -r $jobname\".\n\n";
+		
+	}
+	elsif($runmode eq "cluster") {
+		#cluster mode
+		#implement for HPC execution
+		
+		system("sh $scriptclusterrun");
+		print LOG "sh $scriptclusterrun;\n\n";
+
+		print STDERR "Starting cluster paralleled processing using $jobnumber tasks. To monitor process, use \"squeue\".\n\n";
+
+	}
+}
 
 

@@ -118,7 +118,7 @@ foreach my $exon (sort keys %exon2gene) {
 	print OUT join(",",@exonnames),"\t";
 	
 	#gene
-	print OUT join(",",sort keys %{$exon2gene{$exon}}),"\t \t";
+	print OUT join(",",sort keys %{$exon2gene{$exon}}),"\t";
 	my @genenames;
 	foreach my $gene (sort keys %{$exon2gene{$exon}}) {
 		push @genenames,$gene2name{$gene};
@@ -126,7 +126,7 @@ foreach my $exon (sort keys %exon2gene) {
 	print OUT join(",",@genenames),"\t";
 	
 	#tx
-	print OUT join(",",sort keys %{$exon2tx{$exon}}),"\t \t";
+	print OUT join(",",sort keys %{$exon2tx{$exon}}),"\t";
 	my @txnames;
 	foreach my $tx (sort keys %{$exon2tx{$exon}}) {
 		push @txnames,$tx2name{$tx};
