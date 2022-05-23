@@ -163,19 +163,20 @@ if($dev) {
 	$omictoolsfolder=get_parent_folder(abs_path(dirname($0)));
 }
 
-my $mergefiles="$omictoolsfolder/mergefiles/mergefiles_caller.pl";
-my $parallel_job="$omictoolsfolder/parallel-job/parallel-job_caller.pl";
-my $rnaseqmergefilter="$omictoolsfolder/rnaseq-merge/rnaseq-merge_filter.R";
-my $count2cpm="$omictoolsfolder/rnaseq-merge/count2cpm.R";
-my $process_multiqc="$omictoolsfolder/rnaseq-merge/process_multiqc_summary.pl";
-my $expr_qc="$omictoolsfolder/expr-qc/expr-qc.R";
-my $tx2si="$omictoolsfolder/rnaseq-merge/tx2si.R";
-my $format_exon="$omictoolsfolder/rnaseq-merge/format_exon.R";
-my $format_exonjunc="$omictoolsfolder/rnaseq-merge/format_exonjunc.R";
-
 #used programs
 my $multiqc=find_program("/apps/anaconda3/bin/multiqc");
 my $Rscript=find_program("/apps/R-4.0.2/bin/Rscript");
+
+
+my $mergefiles="perl $omictoolsfolder/mergefiles/mergefiles_caller.pl";
+my $parallel_job="perl $omictoolsfolder/parallel-job/parallel-job_caller.pl";
+my $rnaseqmergefilter="$Rscript $omictoolsfolder/rnaseq-merge/rnaseq-merge_filter.R";
+my $count2cpm="$Rscript $omictoolsfolder/rnaseq-merge/count2cpm.R";
+my $process_multiqc="perl $omictoolsfolder/rnaseq-merge/process_multiqc_summary.pl";
+my $expr_qc="$Rscript $omictoolsfolder/expr-qc/expr-qc.R";
+my $tx2si="$Rscript $omictoolsfolder/rnaseq-merge/tx2si.R";
+#my $format_exonjunc="$Rscript $omictoolsfolder/rnaseq-merge/format_exonjunc.R";
+
 
 
 
@@ -445,11 +446,10 @@ if($as eq "T") {
 	print LOG scalar(keys %sample2exon)," samples identified with exon results.\n";
 	
 	if( scalar(@samples_array) != scalar(keys %sample2exon) ) {
-		print STDERR "ERROR:Not all samples have exon results. You need to run rnaseq-process with --as T.\n\n";
-		print LOG "ERROR:Not all samples have exon results. You need to run rnaseq-process with --as T.\n\n";
+		print STDERR "\nERROR:Not all samples have exon results. You need to run rnaseq-process with --as T.\n\n";
+		print LOG "\nERROR:Not all samples have exon results. You need to run rnaseq-process with --as T.\n\n";
 		exit;
-	}	
-	
+	}
 }
 
 
@@ -551,7 +551,7 @@ print S1 "cp ".$tx2ref{$tx}{"txanno"}." $outputfolder/txanno.txt;";
 print S1 "$mergefiles -m $tempfolder/genes.txt -i ",join(",",@genefiles)," -l 5 -o $tempfolder/$genecountmerged\_wrongtitle;";
 print S1 "tail -n +2 $tempfolder/$genecountmerged\_wrongtitle > $tempfolder/$genecountmerged\_notitle;";
 print S1 "cat $tempfolder/gene_title.txt $tempfolder/$genecountmerged\_notitle > $outputfolder/$genecountmerged;";
-print S1 "$Rscript $count2cpm --count $outputfolder/$genecountmerged --cpm $outputfolder/$genecpmmerged;";
+print S1 "$count2cpm --count $outputfolder/$genecountmerged --cpm $outputfolder/$genecpmmerged;";
 print S1 "rm $tempfolder/$genecountmerged\_wrongtitle;rm $tempfolder/$genecountmerged\_notitle;";
 print S1 "\n";
 
@@ -573,7 +573,7 @@ print S1 "\n";
 print S1 "$mergefiles -m $tempfolder/txs.txt -i ",join(",",@txfiles)," -l 5 -o $tempfolder/$txcountmerged\_wrongtitle -v;";
 print S1 "tail -n +2 $tempfolder/$txcountmerged\_wrongtitle > $tempfolder/$txcountmerged\_notitle;";
 print S1 "cat $tempfolder/tx_title.txt $tempfolder/$txcountmerged\_notitle > $outputfolder/$txcountmerged;";
-print S1 "$Rscript $count2cpm --count $outputfolder/$txcountmerged --cpm $outputfolder/$txcpmmerged;";
+print S1 "$count2cpm --count $outputfolder/$txcountmerged --cpm $outputfolder/$txcpmmerged;";
 print S1 "rm $tempfolder/$txcountmerged\_wrongtitle;rm $tempfolder/$txcountmerged\_notitle;";
 print S1 "\n";
 
@@ -640,29 +640,29 @@ unless(defined $task && length($task)>0) {
 open(S2,">$scriptfile2") || die "Error writing $scriptfile2. $!";
 
 #gene
-print S2 "$Rscript $rnaseqmergefilter --count $outputfolder/$genecountmerged --fpkm $outputfolder/$genefpkmmerged --tpm $outputfolder/$genetpmmerged --filter $filter;";
+print S2 "$rnaseqmergefilter --count $outputfolder/$genecountmerged --fpkm $outputfolder/$genefpkmmerged --tpm $outputfolder/$genetpmmerged --filter $filter;";
 
 my $genecountmerged_filtered="gene.results.merged.count.filtered.$filter.txt";
 my $genecpmmerged_filtered="gene.results.merged.cpm.filtered.$filter.txt";
 my $genetpmmerged_filtered="gene.results.merged.tpm.filtered.$filter.txt";
 
-print S2 "$Rscript $count2cpm --count $outputfolder/$genecountmerged_filtered --cpm $outputfolder/$genecpmmerged_filtered;";
+print S2 "$count2cpm --count $outputfolder/$genecountmerged_filtered --cpm $outputfolder/$genecpmmerged_filtered;";
 
 
 #Expr-qc
 
-print S2 "$Rscript $expr_qc --input $outputfolder/$genetpmmerged_filtered --config $configfile --geneanno $outputfolder/geneanno.txt --out $outputfolder/expr-qc --group $group > $outputfolder/expr_qc_log.txt 2>&1;";
+print S2 "$expr_qc --input $outputfolder/$genetpmmerged_filtered --config $configfile --geneanno $outputfolder/geneanno.txt --out $outputfolder/expr-qc --group $group > $outputfolder/expr_qc_log.txt 2>&1;";
 
 print S2 "\n";
 
 
 #tx filter
-print S2 "$Rscript $rnaseqmergefilter --count $outputfolder/$txcountmerged --fpkm $outputfolder/$txfpkmmerged --tpm $outputfolder/$txtpmmerged --filter $filter;";
+print S2 "$rnaseqmergefilter --count $outputfolder/$txcountmerged --fpkm $outputfolder/$txfpkmmerged --tpm $outputfolder/$txtpmmerged --filter $filter;";
 
 my $txcountmerged_filtered="tx.results.merged.count.filtered.$filter.txt";
 my $txcpmmerged_filtered="tx.results.merged.cpm.filtered.$filter.txt";
 
-print S2 "$Rscript $count2cpm --count $outputfolder/$txcountmerged_filtered --cpm $outputfolder/$txcpmmerged_filtered;";
+print S2 "$count2cpm --count $outputfolder/$txcountmerged_filtered --cpm $outputfolder/$txcpmmerged_filtered;";
 
 print S2 "\n";
 
@@ -677,11 +677,11 @@ print S2 "\n";
 if($as eq "T") {
 	#tx SI
 	#filter to have at least sum of n*0.1 tpm from all samples
-	print S2 "$Rscript $tx2si --gene $outputfolder/$genetpmmerged --tx $outputfolder/$txtpmmerged --anno ",$tx2ref{$tx}{"txanno"}," --out $outputfolder/$txtpmsi --filter auto*0.1\n";
+	print S2 "$tx2si --gene $outputfolder/$genetpmmerged --tx $outputfolder/$txtpmmerged --anno ",$tx2ref{$tx}{"txanno"}," --out $outputfolder/$txtpmsi --filter auto*0.1\n";
 
 	#exon SI
 	#filter to have at least n*3 reads from all samples
-	print S2 "$Rscript $tx2si --gene $outputfolder/$genecountmerged --tx $outputfolder/$exoncountmerged --anno ",$tx2ref{$tx}{"exonanno"}," --out $outputfolder/$exoncountsi  --filter auto*3\n";
+	print S2 "$tx2si --gene $outputfolder/$genecountmerged --tx $outputfolder/$exoncountmerged --anno ",$tx2ref{$tx}{"exonanno"}," --out $outputfolder/$exoncountsi  --filter auto*3\n";
 
 
 	#exon junc SI
@@ -827,7 +827,7 @@ sub submit_job {
 	#print out command for cluster parallel runs
 	#####
 	
-	my $clustercommand="perl $parallel_job -i ".join(",", @scripts_all)." -o $scriptfolder -n ".join(",",@script_names)." --tandem -t $task --env -r "; #changed here for none version
+	my $clustercommand="$parallel_job -i ".join(",", @scripts_all)." -o $scriptfolder -n ".join(",",@script_names)." --tandem -t $task --env -r "; #changed here for none version
 
 
 	if(defined $ppn && length($ppn)>0) {

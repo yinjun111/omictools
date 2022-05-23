@@ -218,8 +218,8 @@ GetOptions(
 ########
 #Prerequisites
 ########
-my $r=find_program("/apps/R-4.0.2/bin/R");
-my $rscript=find_program("/apps/R-4.0.2/bin/Rscript");
+my $R=find_program("/apps/R-4.0.2/bin/R");
+my $Rscript=find_program("/apps/R-4.0.2/bin/Rscript");
 
 
 my $omictoolsfolder="/apps/omictools/";
@@ -235,7 +235,7 @@ if($dev) {
 
 
 #omictools
-my $descript="$rscript $omictoolsfolder/rnaseq-de/de_test_caller.R";
+my $descript="$Rscript $omictoolsfolder/rnaseq-de/de_test_caller.R";
 my $summarize_txsi="perl $omictoolsfolder/rnaseq-de/summarize_txsi.pl";
 my $summarize_exonsi="perl $omictoolsfolder/rnaseq-de/summarize_exonsi.pl";
 my $mergefiles="perl $omictoolsfolder/mergefiles/mergefiles_caller.pl";
@@ -244,7 +244,7 @@ my $parallel_job="perl $omictoolsfolder/parallel-job/parallel-job_caller.pl";
 
 
 #my $r=find_program("/apps/R-3.4.1/bin/R");
-#my $rscript=find_program("/apps/R-3.4.1/bin/Rscript");
+#my $Rscript=find_program("/apps/R-3.4.1/bin/Rscript");
 
 
 #######
@@ -303,7 +303,7 @@ print LOG "\nomictools rnaseq-de $version running ...\n\n";
 
 #Report R package version here !!!
 
-open(RLOG,"|$r --no-restore --no-save --slave") || die $!;
+open(RLOG,"|$R --no-restore --no-save --slave") || die $!;
 select RLOG;
 print << "CODE";
 
@@ -312,7 +312,7 @@ rinfo<-c()
 Rversion<-getRversion()
 
 rinfo<-rbind(rinfo,c("R",R.Version()\$version.string))
-rinfo<-rbind(rinfo,c("Rscript","$rscript"))
+rinfo<-rbind(rinfo,c("Rscript","$Rscript"))
 rinfo<-rbind(rinfo,c("R library",paste(.libPaths(), collapse=",")))
 
 for (package in c("BiocManager","DESeq2","argparser","ggplot2","EnhancedVolcano")) {
@@ -900,7 +900,7 @@ sub submit_job {
 	#print out command for cluster parallel runs
 	#####
 	
-	my $clustercommand="perl $parallel_job -i ".join(",", @scripts_all)." -o $scriptfolder -n ".join(",",@script_names)." --tandem -t $task --env -r "; #changed here for none version
+	my $clustercommand="$parallel_job -i ".join(",", @scripts_all)." -o $scriptfolder -n ".join(",",@script_names)." --tandem -t $task --env -r "; #changed here for none version
 
 
 	if(defined $ppn && length($ppn)>0) {

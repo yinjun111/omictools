@@ -170,7 +170,7 @@ if($dev) {
 	$omictoolsfolder=get_parent_folder(abs_path(dirname($0)));
 }
 
-my $parallel_job="$omictoolsfolder/parallel-job/parallel-job_caller.pl";
+my $parallel_job="perl $omictoolsfolder/parallel-job/parallel-job_caller.pl";
 
 
 my $cutadapt=find_program("/apps/anaconda3/bin/cutadapt");
@@ -821,7 +821,7 @@ sub submit_job {
 	#print out command for cluster parallel runs
 	#####
 	
-	my $clustercommand="perl $parallel_job -i ".join(",", @scripts_all)." -o $scriptfolder -n ".join(",",@script_names)." --tandem -t $task --env -r "; #changed here for none version
+	my $clustercommand="$parallel_job -i ".join(",", @scripts_all)." -o $scriptfolder -n ".join(",",@script_names)." --tandem -t $task --env -r "; #changed here for none version
 
 
 	if(defined $ppn && length($ppn)>0) {

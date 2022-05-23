@@ -127,6 +127,7 @@ my $motif_finder="perl $omictoolsfolder/motif-finder/motif-finder_caller.pl";
 
 my $mergefiles="perl $omictoolsfolder/mergefiles/mergefiles_caller.pl";
 my $text2excel ="perl $omictoolsfolder/text2excel/text2excel.pl";
+my $extract_command="perl $omictoolsfolder/misc/extract_command.pl";
 
 my $parallel_job ="perl perl $omictoolsfolder/parallel-job/parallel-job_caller.pl";
 
@@ -157,6 +158,7 @@ my %commands2program=(
     
 	"mergefiles"=>$mergefiles,
     "text2excel"=>$text2excel,
+	"extract-command"=>$extract_command,
 	
 	"parallel-job"=>$parallel_job,
 );

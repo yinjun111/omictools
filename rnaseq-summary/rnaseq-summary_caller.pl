@@ -170,8 +170,8 @@ if($dev) {
 }
 
 
-my $mergefiles="$omictoolsfolder/mergefiles/mergefiles_caller.pl";
-my $text2excel="$omictoolsfolder/text2excel/text2excel.pl";
+my $mergefiles="perl $omictoolsfolder/mergefiles/mergefiles_caller.pl";
+my $text2excel="perl $omictoolsfolder/text2excel/text2excel.pl";
 
 my $rnaseq_motif="perl $omictoolsfolder/rnaseq-motif/rnaseq-motif_caller.pl".scalar(add_dev($dev));
 my $rnaseq_motif_summary="perl $omictoolsfolder/rnaseq-motif-summary/rnaseq-motif-summary.pl";

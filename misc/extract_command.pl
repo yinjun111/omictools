@@ -21,9 +21,15 @@ my $usage="
 
 extract_command
 version: $version
-Usage: perl extract_command.pl -i command1.sh,command2.sh -c \'command\' -o newcommand.sh
+Usage: omictools extract-command -i command1.sh,command2.sh -c \'command\' -o newcommand.sh
 
-Description: extract a command to run from a sbptools generated script file
+Description: extract a command to run from a omictools script file
+
+For example, the following command will extract the featurecounts command for all samples. Then you can just run rnaseq-process_run_onlyfeaturecounts.sh using omictools parallel-job to calculate the exon/exonjunc counts without restasting all the alignment jobs
+
+omictools extract-command -i rnaseq-process_run.sh -c /apps/subread-2.0.3-Linux-x86_64/bin/featureCounts -o rnaseq-process_run_onlyfeaturecounts.sh
+omictools parallel-job -i rnaseq-process_run_onlyfeaturecounts.sh -r
+
 
 Parameters:
 
