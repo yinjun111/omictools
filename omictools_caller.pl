@@ -100,35 +100,35 @@ else {
 #####
 
 
-my $bs_fastq="$omictoolsfolder/bs-fastq/bs-fastq_caller.pl";
-my $geo_download="$omictoolsfolder/geo-download/geo-download_caller.pl";
+my $bs_fastq="perl $omictoolsfolder/bs-fastq/bs-fastq_caller.pl";
+my $geo_download="perl $omictoolsfolder/geo-download/geo-download_caller.pl";
 
-my $rnaseq_process="$omictoolsfolder/rnaseq-process/rnaseq-process_caller.pl";
-my $rnaseq_merge="$omictoolsfolder/rnaseq-merge/rnaseq-merge_caller.pl";
-my $rnaseq_de="$omictoolsfolder/rnaseq-de/rnaseq-de_caller.pl";
-my $rnaseq_summary="$omictoolsfolder/rnaseq-summary/rnaseq-summary_caller.pl";
+my $rnaseq_process="perl $omictoolsfolder/rnaseq-process/rnaseq-process_caller.pl";
+my $rnaseq_merge="perl $omictoolsfolder/rnaseq-merge/rnaseq-merge_caller.pl";
+my $rnaseq_de="perl $omictoolsfolder/rnaseq-de/rnaseq-de_caller.pl";
+my $rnaseq_summary="perl $omictoolsfolder/rnaseq-summary/rnaseq-summary_caller.pl";
 
-my $prepare_merge="$omictoolsfolder/prepare-merge/prepare-merge_caller.pl";
+my $prepare_merge="perl $omictoolsfolder/prepare-merge/prepare-merge_caller.pl";
 
 my $rnaseq_var="sh $omictoolsfolder/rnaseq-var/rnaseq-var_caller.sh";
-my $rnaseq_var_summary="$omictoolsfolder/rnaseq-var/rnaseq-var_summary.pl";
-my $rnaseq_motif="$omictoolsfolder/rnaseq-motif/rnaseq-motif_caller.pl";
-my $rnaseq_motif_summary="$omictoolsfolder/rnaseq-motif-summary/rnaseq-motif-summary.pl";
+my $rnaseq_var_summary="perl $omictoolsfolder/rnaseq-var/rnaseq-var_summary.pl";
+my $rnaseq_motif="perl $omictoolsfolder/rnaseq-motif/rnaseq-motif_caller.pl";
+my $rnaseq_motif_summary="perl $omictoolsfolder/rnaseq-motif-summary/rnaseq-motif-summary.pl";
 
 
-my $chipseq_process="$omictoolsfolder/chipseq-process/chipseq-process_caller.pl";
-my $chipseq_merge="$omictoolsfolder/chipseq-merge/chipseq-merge_caller.pl";
-my $chipseq_de="$omictoolsfolder/chipseq-de/chipseq-de_caller.pl";
-my $chipseq_summary="$omictoolsfolder/chipseq-summary/chipseq-summary_caller.pl";
+my $chipseq_process="perl $omictoolsfolder/chipseq-process/chipseq-process_caller.pl";
+my $chipseq_merge="perl $omictoolsfolder/chipseq-merge/chipseq-merge_caller.pl";
+my $chipseq_de="perl $omictoolsfolder/chipseq-de/chipseq-de_caller.pl";
+my $chipseq_summary="perl $omictoolsfolder/chipseq-summary/chipseq-summary_caller.pl";
 
-my $dnaseq_process="$omictoolsfolder/dnaseq-process/dnaseq-process_caller.pl";
+my $dnaseq_process="perl $omictoolsfolder/dnaseq-process/dnaseq-process_caller.pl";
 
-my $motif_finder="$omictoolsfolder/motif-finder/motif-finder_caller.pl";
+my $motif_finder="perl $omictoolsfolder/motif-finder/motif-finder_caller.pl";
 
-my $mergefiles="$omictoolsfolder/mergefiles/mergefiles_caller.pl";
+my $mergefiles="perl $omictoolsfolder/mergefiles/mergefiles_caller.pl";
 my $text2excel ="perl $omictoolsfolder/text2excel/text2excel.pl";
 
-my $parallel_job ="perl $omictoolsfolder/parallel-job/parallel-job_caller.pl";
+my $parallel_job ="perl perl $omictoolsfolder/parallel-job/parallel-job_caller.pl";
 
 my %commands2program=(
     "bs-fastq"=>$bs_fastq,
