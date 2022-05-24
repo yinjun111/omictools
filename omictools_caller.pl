@@ -25,9 +25,9 @@ Parameters:
     ########
     #RNA-Seq
     ########
-    rnaseq-process    RNA-seq QC, Align, and RSEM for FASTQ files
+    rnaseq-process    RNA-seq QC, Align, and Counting for FASTQ files
     rnaseq-merge      Merge rnaseq-process results for downstream analyses
-    rnaseq-de         Perform DE analysis using DESeq2
+    rnaseq-de         Perform DE/AS analyses
     rnaseq-summary    Summarize RNA-Seq DE results
 
     prepare-merge     Generate a merge folder from raw count file for rnaseq-de/summary analysis
@@ -37,7 +37,7 @@ Parameters:
     ########
     #AWS
     ########
-    parallel-job      Batch job submission in AWS
+    parallel-job      Batch job submission to HPC
 
     ########
     #Data Download
@@ -50,8 +50,8 @@ Parameters:
     ########
     mergefiles        Use a model file to merge different files together
     text2excel        Build excel file using text file
+    extract-command   Extract a command from omictools script file
 
-    ensembl2ucsc      Convert Ensembl gtf/fasta/bed into UCSC format
 
 ";
 
