@@ -300,6 +300,10 @@ else {
 	exit;
 }
 
+if($as eq "T") {
+	print STDERR "\n--as T defined. Perform exon/exonjunc counting for Alternative Splicing analyses.\n\n" if $verbose;
+	print LOG "\n--as T defined. Perform exon/exonjunc counting for Alternative Splicing analyses.\n\n";
+}
 
 #open config files to find fastqs
 

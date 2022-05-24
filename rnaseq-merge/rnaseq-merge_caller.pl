@@ -307,6 +307,14 @@ else {
 	exit;
 }
 
+
+
+if($as eq "T") {
+	print STDERR "\n--as T defined. Perform exon/exonjunc merging and SI calculation for Alternative Splicing analyses.\n\n" if $verbose;
+	print LOG "\n--as T defined. Perform exon/exonjunc merging and SI calculation for Alternative Splicing analyses.\n\n";
+}
+
+
 #open config files to find samples
 
 my @samples_array;

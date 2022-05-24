@@ -375,6 +375,13 @@ else {
 }
 
 
+
+if($as eq "T") {
+	print STDERR "\n--as T defined. Perform Alternative Splicing analyses.\n" if $verbose;
+	print LOG "\n--as T defined. Perform Alternative Splicing analyses.\n";
+}
+
+
 #RNA-Seq
 
 #my $genecountmerged="gene.results.merged.count.txt";
