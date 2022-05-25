@@ -38,6 +38,7 @@ my $version="1.1";
 #v0.8, add exon and exon junction count by subread
 #v1.0, change STAR location, slurm tested
 #v1.1, convert job submission into submit_job function 
+#v1.11, error mesage for fastq
 
 my $usage="
 
@@ -377,21 +378,18 @@ while(<IN>) {
 		$sample2indexname{$array[0]}=$indexname;
 
 		
-		#fastq1
-		if(-e $array[$configattrs{"FASTQ1"}]) {
-			push @{$sample2fastq{$indexname}},$array[$configattrs{"FASTQ1"}];
-		}
-		else {
+		#fastq1. Print error message, but still proceed to generate script
+		push @{$sample2fastq{$indexname}},$array[$configattrs{"FASTQ1"}];
+		
+		if(!-e $array[$configattrs{"FASTQ1"}]) {
 			print STDERR "\n\nERROR:",$array[$configattrs{"FASTQ1"}]," doesn't exist. Please check $configfile setting.\n\n";
 			print LOG "\n\nERROR:",$array[$configattrs{"FASTQ1"}]," doesn't exist. Please check $configfile setting.\n\n";
 		}
 		
-		#fastq2 (Read2)
+		#fastq2 (Read2) Print error message, but still proceed to generate script
 		if(defined $configattrs{"FASTQ2"}) {
-			if(-e $array[$configattrs{"FASTQ2"}]) {
-				push @{$sample2fastq{$indexname}},$array[$configattrs{"FASTQ2"}];
-			}
-			else {
+			push @{$sample2fastq{$indexname}},$array[$configattrs{"FASTQ2"}];
+			if(!-e $array[$configattrs{"FASTQ2"}]) {
 				print STDERR "\n\nERROR:",$array[$configattrs{"FASTQ2"}]," doesn't exist. Please check $configfile setting.\n\n";
 				print LOG "\n\nERROR:",$array[$configattrs{"FASTQ2"}]," doesn't exist. Please check $configfile setting.\n\n";	
 			}
