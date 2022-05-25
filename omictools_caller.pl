@@ -129,7 +129,7 @@ my $mergefiles="perl $omictoolsfolder/mergefiles/mergefiles_caller.pl";
 my $text2excel ="perl $omictoolsfolder/text2excel/text2excel.pl";
 my $extract_command="perl $omictoolsfolder/misc/extract_command.pl";
 
-my $parallel_job ="perl perl $omictoolsfolder/parallel-job/parallel-job_caller.pl";
+my $parallel_job ="perl $omictoolsfolder/parallel-job/parallel-job_caller.pl";
 
 my %commands2program=(
     "bs-fastq"=>$bs_fastq,

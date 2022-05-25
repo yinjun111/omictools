@@ -382,16 +382,16 @@ while(<IN>) {
 		push @{$sample2fastq{$indexname}},$array[$configattrs{"FASTQ1"}];
 		
 		if(!-e $array[$configattrs{"FASTQ1"}]) {
-			print STDERR "\n\nERROR:",$array[$configattrs{"FASTQ1"}]," doesn't exist. Please check $configfile setting.\n\n";
-			print LOG "\n\nERROR:",$array[$configattrs{"FASTQ1"}]," doesn't exist. Please check $configfile setting.\n\n";
+			print STDERR "ERROR:",$array[$configattrs{"FASTQ1"}]," doesn't exist. Please check $configfile setting.\n\n";
+			print LOG "ERROR:",$array[$configattrs{"FASTQ1"}]," doesn't exist. Please check $configfile setting.\n\n";
 		}
 		
 		#fastq2 (Read2) Print error message, but still proceed to generate script
 		if(defined $configattrs{"FASTQ2"}) {
 			push @{$sample2fastq{$indexname}},$array[$configattrs{"FASTQ2"}];
 			if(!-e $array[$configattrs{"FASTQ2"}]) {
-				print STDERR "\n\nERROR:",$array[$configattrs{"FASTQ2"}]," doesn't exist. Please check $configfile setting.\n\n";
-				print LOG "\n\nERROR:",$array[$configattrs{"FASTQ2"}]," doesn't exist. Please check $configfile setting.\n\n";	
+				print STDERR "ERROR:",$array[$configattrs{"FASTQ2"}]," doesn't exist. Please check $configfile setting.\n\n";
+				print LOG "ERROR:",$array[$configattrs{"FASTQ2"}]," doesn't exist. Please check $configfile setting.\n\n";	
 			}
 		}
 		
