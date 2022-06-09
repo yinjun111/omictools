@@ -92,6 +92,7 @@ print LOG "\n";
 #Process
 ########
 
+my $commandlinenum;
 
 open(OUT,">$outfile") || die "Error writing $outfile. $!";
 
@@ -109,6 +110,7 @@ foreach my $infileg (split(",",$infiles)) {
 				#only the selected command
 				if($_=~/($command[^;]+)/) {
 					print OUT $1,"\n";
+					$commandlinenum++;
 				}
 			}
 			elsif($type=~/^(\d+)/) {
@@ -124,12 +126,14 @@ foreach my $infileg (split(",",$infiles)) {
 						$step++;
 					}
 					print OUT $commands,"\n";
+					$commandlinenum++;
 				}	
 			}
 			else {
 				#everything after this command
 				if($_=~/($command.+)/) {
 					print OUT $1,"\n";
+					$commandlinenum++;
 				}
 			}
 		}
@@ -137,7 +141,12 @@ foreach my $infileg (split(",",$infiles)) {
 	}
 }
 close OUT;
+
+print STDERR "$commandlinenum command generated containig $command.\n";
+print LOG "$commandlinenum command generated containig $command.\n";
+
 close LOG;
+
 
 ########
 #Functions

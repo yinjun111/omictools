@@ -11,7 +11,7 @@ use List::Util qw(sum);
 ########
 
 
-my $version="1.1";
+my $version="1.11";
 
 #v0.1b, changed DE match pattern
 #v0.1c, add first line recognition in DE results
@@ -37,6 +37,7 @@ my $version="1.1";
 #v0.83, add FC0Q005,changed default dbs for GSEA
 #v1.0, tested for slurm. skip motif analysis
 #v1.1 add pcutoff
+#v1.11 fixed metascape bug
 
 my $usage="
 
@@ -199,7 +200,7 @@ if($dev) {
 my $gsea_gen="perl $gstoolsfolder/gsea-gen/gsea-gen_caller.pl";
 my $gsea_gen_summary="perl $gstoolsfolder/gsea-gen/gsea-gen-summary.pl".scalar(add_dev($dev));
 
-my $metascape_gen="perl $omictoolsfolder/metascape-gen/metascape-gen_caller.pl";
+my $metascape_gen="perl $gstoolsfolder/metascape-gen/metascape-gen_caller.pl";
 
 
 ########
