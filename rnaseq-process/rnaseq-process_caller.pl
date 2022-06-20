@@ -12,7 +12,7 @@ use File::Basename qw(basename dirname);
 ########
 
 
-my $version="1.1";
+my $version="1.12";
 
 #0.2b change ensembl to UCSC format
 #0.2c add bw generation
@@ -39,6 +39,7 @@ my $version="1.1";
 #v1.0, change STAR location, slurm tested
 #v1.1, convert job submission into submit_job function 
 #v1.11, error mesage for fastq
+#v1.12, change as calculation as default
 
 my $usage="
 
@@ -61,7 +62,7 @@ Parameters:
     --tx|-t           Transcriptome
                         Currently support Human.B38.Ensembl88,Mouse.B38.Ensembl88,Rat.Rn6.Ensembl88
 
-    --as              Count reads for exon and exon junctions for alternative splicing [F]
+    --as              Count reads for exon and exon junctions for alternative splicing [T]
     --bamcoverage     Produce bw file for bam files [F]
     --keepfastq       Keep Cutadapt trimmed Fastq [F]	
 
@@ -117,7 +118,7 @@ my $configfile;
 my $outputfolder="01.Process";
 my $verbose=1;
 my $tx;
-my $as="F";
+my $as="T";
 my $runbamcoverage="F";
 my $keepfastq="F";
 my $smartseq=0;

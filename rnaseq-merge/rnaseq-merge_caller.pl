@@ -12,7 +12,7 @@ use File::Basename qw(basename dirname);
 ########
 
 
-my $version="1.2";
+my $version="1.3";
 
 #v0.2, add filter function to get files for PCA
 #v0.3, removed -v, add -r implementation for local
@@ -29,6 +29,7 @@ my $version="1.2";
 #v1.0, qstat to squeue, slurm tested
 #v1.1, add AS calculation
 #v1.2, add exon support. add submit_job function
+#v1.3, add exon junc support
 
 my $usage="
 
@@ -389,6 +390,7 @@ print LOG "\nReading sample folders.\n";
 my %sample2gene;
 my %sample2tx;
 my %sample2exon;
+my %sample2exonjunc;
 my %sample2folder;
 
 foreach my $infolder (split(",",$inputfolders)) {
@@ -426,6 +428,9 @@ foreach my $infolder (split(",",$inputfolders)) {
 						if($samplefile=~/featurecounts_exon.txt$/) {
 							$sample2exon{$samplename}=abs_path($samplefile);
 						}
+						if($samplefile=~/exon.txt.jcounts$/) {
+							$sample2exonjunc{$samplename}=abs_path($samplefile);
+						}						
 					}
 					
 				}
@@ -458,6 +463,15 @@ if($as eq "T") {
 		print LOG "\nERROR:Not all samples have exon results. You need to run rnaseq-process with --as T.\n\n";
 		exit;
 	}
+	
+	print STDERR scalar(keys %sample2exonjunc)," samples identified with exon juncs results.\n" if $verbose;
+	print LOG scalar(keys %sample2exonjunc)," samples identified with exon juncs results.\n";
+	
+	if( scalar(@samples_array) != scalar(keys %sample2exonjunc) ) {
+		print STDERR "\nERROR:Not all samples have exon juncs results. You need to run rnaseq-process with --as T.\n\n";
+		print LOG "\nERROR:Not all samples have exon juncs results. You need to run rnaseq-process with --as T.\n\n";
+		exit;
+	}	
 }
 
 
@@ -613,7 +627,7 @@ if($as eq "T") {
 	print S1 "\n";
 	
 	#exon junc count
-
+	print S1 "";
 	
 	
 }
