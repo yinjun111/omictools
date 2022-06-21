@@ -304,10 +304,10 @@ while(<IN>) {
 	#gene names
 	if(keys %genes) {
 		print OUT join(",",sort keys %genes),"\t";
-		print OUT join(",",map {$genes{$_}} sort keys %genes),"\n";
+		print OUT join(",",map {$genes{$_}} sort keys %genes),"\t";
 	}
 	else {
-		print OUT " \t \n";
+		print OUT " \t \t";
 	}
 	
 	#evidences
