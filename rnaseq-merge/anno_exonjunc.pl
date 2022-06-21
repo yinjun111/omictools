@@ -199,8 +199,7 @@ print STDERR "Processing exon junction file:$inputfile\n\n";
 #generate annotation for exons
 open(IN,$inputfile) || die $!;
 open(OUT,">$outputfile") || die $!;
-
-print OUT "Exonjunc\tExonjuncNames\tEvidences\tType\tStartExon\tEndExon\tTxID\tTxName\tGeneID\tGeneName\n";
+print OUT "Exonjunc\tExonjuncNames\tGeneID\tGeneName\tEvidences\tType\tStartExon\tEndExon\tTxID\tTxName\n";
 
 while(<IN>) {
 	tr/\r\n//d;
@@ -301,7 +300,16 @@ while(<IN>) {
 	else {
 		print OUT " \t";
 	}
-
+	
+	#gene names
+	if(keys %genes) {
+		print OUT join(",",sort keys %genes),"\t";
+		print OUT join(",",map {$genes{$_}} sort keys %genes),"\n";
+	}
+	else {
+		print OUT " \t \n";
+	}
+	
 	#evidences
 	if(keys %exonjuncevidences) {
 		print OUT join(",",sort keys %exonjuncevidences),"\t";
@@ -337,19 +345,13 @@ while(<IN>) {
 	if(keys %txs) {
 		#sort by txnames
 		print OUT join(",",sort {$txs{$a} cmp $txs{$b}} keys %txs),"\t";
-		print OUT join(",",map {$txs{$_}} sort {$txs{$a} cmp $txs{$b}} keys %txs),"\t";
-	}
-	else {
-		print OUT " \t \t";
-	}
-
-	if(keys %genes) {
-		print OUT join(",",sort keys %genes),"\t";
-		print OUT join(",",map {$genes{$_}} sort keys %genes),"\n";
+		print OUT join(",",map {$txs{$_}} sort {$txs{$a} cmp $txs{$b}} keys %txs),"\n";
 	}
 	else {
 		print OUT " \t \n";
 	}
+
+
 }
 close OUT;
 

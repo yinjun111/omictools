@@ -176,8 +176,8 @@ my $count2cpm="$Rscript $omictoolsfolder/rnaseq-merge/count2cpm.R";
 my $process_multiqc="perl $omictoolsfolder/rnaseq-merge/process_multiqc_summary.pl";
 my $expr_qc="$Rscript $omictoolsfolder/expr-qc/expr-qc.R";
 my $tx2si="$Rscript $omictoolsfolder/rnaseq-merge/tx2si.R";
-#my $format_exonjunc="$Rscript $omictoolsfolder/rnaseq-merge/format_exonjunc.R";
-
+my $merge_exonjunc="perl $omictoolsfolder/rnaseq-merge/merge_exonjunc.pl";
+my $anno_exonjunc="perl $omictoolsfolder/rnaseq-merge/anno_exonjunc.pl";
 
 
 
@@ -200,6 +200,10 @@ my $txtpmsi="tx.results.merged.tpm.si.txt";
 
 my $exoncountmerged="exon.results.merged.count.txt";
 my $exoncountsi="exon.results.merged.count.si.txt";
+
+my $exonjunccountmerged="exonjunc.results.merged.count.txt";
+my $exonjuncanno="exonjunc.anno.txt";
+my $exonjunccountsi="exonjunc.results.merged.count.si.txt";
 
 #Create folders
 
@@ -506,6 +510,7 @@ if($as eq "T") {
 my @genefiles;
 my @txfiles;
 my @exonfiles;
+my @exonjuncfiles;
 
 foreach my $sample (@samples_array) {
 	if(defined $sample2gene{$sample}) {
@@ -534,7 +539,17 @@ foreach my $sample (@samples_array) {
 			print STDERR "ERROR: $sample exon results not defined in $inputfolders.\n\n";
 			print LOG "ERROR: $sample exon results not defined in $inputfolders.\n\n";
 			exit;
-		}	
+		}
+
+		if(defined $sample2exonjunc{$sample}) {
+			push @exonjuncfiles,$sample2exonjunc{$sample};
+		}
+		else {
+			print STDERR "ERROR: $sample exon junc results not defined in $inputfolders.\n\n";
+			print LOG "ERROR: $sample exon junc results not defined in $inputfolders.\n\n";
+			exit;
+		}
+		
 	}
 	
 }
@@ -627,8 +642,8 @@ if($as eq "T") {
 	print S1 "\n";
 	
 	#exon junc count
-	print S1 "";
-	
+	print S1 "$merge_exonjunc -i ",join(",",@exonjuncfiles)," -o $outputfolder/$exonjunccountmerged;";
+	print S1 "$anno_exonjunc -i $outputfolder/$exonjunccountmerged --tx $tx -o $outputfolder/$exonjuncanno;\n";
 	
 }
 
@@ -703,10 +718,12 @@ if($as eq "T") {
 
 	#exon SI
 	#filter to have at least n*3 reads from all samples
-	print S2 "$tx2si --gene $outputfolder/$genecountmerged --tx $outputfolder/$exoncountmerged --anno ",$tx2ref{$tx}{"exonanno"}," --out $outputfolder/$exoncountsi  --filter auto*3\n";
+	print S2 "$tx2si --gene $outputfolder/$genecountmerged --tx $outputfolder/$exoncountmerged --anno ",$tx2ref{$tx}{"exonanno"}," --out $outputfolder/$exoncountsi  --filter auto*3\n";
 
 
 	#exon junc SI
+	print S2 "$tx2si --gene $outputfolder/$genecountmerged --tx $outputfolder/$exonjunccountmerged --anno $outputfolder/$exonjuncanno --out $outputfolder/$exonjunccountsi  --filter auto*3\n";
+
 	
 }
 
