@@ -12,7 +12,7 @@ use File::Basename qw(basename dirname);
 ########
 
 
-my $version="1.12";
+my $version="1.2";
 
 #0.2b change ensembl to UCSC format
 #0.2c add bw generation
@@ -40,6 +40,8 @@ my $version="1.12";
 #v1.1, convert job submission into submit_job function 
 #v1.11, error mesage for fastq
 #v1.12, change as calculation as default
+#v1.2, add junction conversion to gtf/bed. AS analysis should be complete for rnaseq-process now.
+
 
 my $usage="
 
@@ -173,6 +175,9 @@ if($dev) {
 }
 
 my $parallel_job="perl $omictoolsfolder/parallel-job/parallel-job_caller.pl";
+my $exonjunc2gtf="perl $omictoolsfolder/rnaseq-process/exonjunc2gtf.pl";
+my $exonjunc2bed="perl $omictoolsfolder/rnaseq-process/exonjunc2bed.pl";
+my $anno_exonjunc="perl $omictoolsfolder/rnaseq-merge/anno_exonjunc.pl";
 
 
 my $cutadapt=find_program("/apps/anaconda3/bin/cutadapt");
@@ -619,8 +624,16 @@ if(defined $configattrs{"FASTQ2"}) {
 
 		#--as tag to use featureCounts
 		if($as eq "T") {
+			#exon & exon junc counts
 			$sample2workflow{$sample}.="$featurecounts -p -O -J -T $threads -f -t exon -g exon_id -a ".$tx2ref{$tx}{"gtf"}." -o $samplefolder/$sample\_featurecounts_exon.txt $samplefolder/$sample\_Aligned.sortedByCoord.out.bam;";
-			#may need to add SI for tx, exon and exon junc ...
+			
+			#convert to bed and gtf
+			$sample2workflow{$sample}.="$anno_exonjunc -i $samplefolder/$sample\_featurecounts_exon.txt.jcounts --tx $tx --type featurecounts -o $samplefolder/$sample\_featurecounts_exon.txt.jcounts_anno.txt;";
+			
+			$sample2workflow{$sample}.="$exonjunc2bed -i $samplefolder/$sample\_featurecounts_exon.txt.jcounts -a $samplefolder/$sample\_featurecounts_exon.txt.jcounts_anno.txt -o $samplefolder/$sample\_featurecounts_exon.txt.jcounts.bed;";
+			
+			$sample2workflow{$sample}.="$exonjunc2gtf -i $samplefolder/$sample\_featurecounts_exon.txt.jcounts -a $samplefolder/$sample\_featurecounts_exon.txt.jcounts_anno.txt -o $samplefolder/$sample\_featurecounts_exon.txt.jcounts.gtf;";
+						
 		}
 		
 		if($runbamcoverage eq "T") {
@@ -667,8 +680,15 @@ else {
 		#--as tag to use featureCounts
 		if($as eq "T") {
 			$sample2workflow{$sample}.="$featurecounts -O -J -T $threads -f -t exon -g exon_id -a ".$tx2ref{$tx}{"gtf"}." -o $samplefolder/$sample\_featurecounts_exon.txt $samplefolder/$sample\_Aligned.sortedByCoord.out.bam;";
-			#may need to add SI for tx, exon and exon junc ...
-		}		
+			
+			#convert to bed and gtf
+			$sample2workflow{$sample}.="$anno_exonjunc -i $samplefolder/$sample\_featurecounts_exon.txt.jcounts --tx $tx --type featurecounts -o $samplefolder/$sample\_featurecounts_exon.txt.jcounts_anno.txt;";
+			
+			$sample2workflow{$sample}.="$exonjunc2bed -i $samplefolder/$sample\_featurecounts_exon.txt.jcounts -a $samplefolder/$sample\_featurecounts_exon.txt.jcounts_anno.txt -o $samplefolder/$sample\_featurecounts_exon.txt.jcounts.bed;";
+			
+			$sample2workflow{$sample}.="$exonjunc2gtf -i $samplefolder/$sample\_featurecounts_exon.txt.jcounts -a $samplefolder/$sample\_featurecounts_exon.txt.jcounts_anno.txt -o $samplefolder/$sample\_featurecounts_exon.txt.jcounts.gtf;";
+
+		}
 		
 		if($runbamcoverage eq "T") {
 			$sample2workflow{$sample}.="$bamcoverage --numberOfProcessors $threads --bam $samplefolder/$sample\_Aligned.sortedByCoord.out.bam --normalizeUsing CPM --binSize 5 -o $samplefolder/$sample\_Aligned.sortedByCoord.out.bw;";

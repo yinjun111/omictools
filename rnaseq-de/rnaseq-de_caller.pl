@@ -78,13 +78,15 @@ Optional Parameters:
     --fccutoff        Log2 FC cutoff [1]
     --qcutoff         Corrected P cutoff [0.05]
 
-
     #DESeq2 specific
     --independentfiltering   Apply independentfiltering in DESeq2 [T]
     --cookscutoff            Apply Cook\'s cutoff  in DESeq2 [T]
 
 Alternative Splicing Analyses Parameters:
     --as              Run Tx DE/AS tests for alternative splicing analyses for tx and exon [F]
+
+    --sifccutoff      Log2 FC cutoff, Log2(1.2)=0.263 [0.263]
+    --siqcutoff       Corrected P cutoff [0.05]
 
 
 #Parameters for HPC
@@ -165,6 +167,8 @@ my $filter="auto";
 my $as="F";
 my $fccutoff=1;
 my $qcutoff=0.05;
+my $sifccutoff=0.263;
+my $siqcutoff=0.05;
 my $independentfiltering="T";
 my $cookscutoff="T";
 
@@ -199,6 +203,8 @@ GetOptions(
 	
 	"fccutoff=s" => \$fccutoff,
 	"qcutoff=s" => \$qcutoff,
+	"sifccutoff=s" => \$sifccutoff,
+	"siqcutoff=s" => \$siqcutoff,
 	
 	"as=s" => \$as,
 	"independentfiltering=s" => \$independentfiltering,
@@ -377,8 +383,8 @@ else {
 
 
 if($as eq "T") {
-	print STDERR "\n--as T defined. Perform Alternative Splicing analyses.\n" if $verbose;
-	print LOG "\n--as T defined. Perform Alternative Splicing analyses.\n";
+	print STDERR "\n--as T defined. Perform Alternative Splicing analyses.\n\n" if $verbose;
+	print LOG "\n--as T defined. Perform Alternative Splicing analyses.\n\n";
 }
 
 
@@ -420,7 +426,20 @@ my %rnaseq2files=(
 		"siresultanno"=> "exon.results.merged.count.si.Lm.FC$fccutoff.$qmethod.P$qcutoff.anno.txt",
 		"siresultsummary"=> "exon.results.merged.count.si.summary.txt",
 		"siresultsummaryanno"=> "exon.results.merged.count.si.summary.anno.txt",
-	}	
+	},
+	"exonjunc"=> { 
+		"count"=> "exonjunc.results.merged.count.txt",
+		"si"=> "exonjunc.results.merged.count.si.txt",		
+		"anno"=> "exonjuncanno.txt",				
+		"selected"=> "exonjunc.results.merged.count.selected.txt",
+		"siselected"=> "exonjunc.results.merged.count.si.selected.txt",				
+		"result"=> "exonjunc.results.merged.count.DESeq2.$pmethod.FC$fccutoff.$qmethod.P$qcutoff.txt",
+		"siresult"=> "exonjunc.results.merged.count.si.Lm.FC$fccutoff.$qmethod.P$qcutoff.txt",
+		"resultanno"=> "exonjunc.results.merged.count.DESeq2.$pmethod.FC$fccutoff.$qmethod.P$qcutoff.anno.txt",
+		"siresultanno"=> "exonjunc.results.merged.count.si.Lm.FC$fccutoff.$qmethod.P$qcutoff.anno.txt",
+		"siresultsummary"=> "exonjunc.results.merged.count.si.summary.txt",
+		"siresultsummaryanno"=> "exonjunc.results.merged.count.si.summary.anno.txt",
+	}		
 );
 
 
@@ -506,6 +525,13 @@ if($as eq "T") {
 		print LOG "ERROR:no exon count file found: ","$inputfolder/".$rnaseq2files{"exon"}{"count"},". You will need to run rnaseq-merge using --as T.\n";
 		exit;
 	}
+
+	unless(-e "$inputfolder/".$rnaseq2files{"exonjunc"}{"count"}) {
+		print STDERR "ERROR:no exonjunc count file found: ","$inputfolder/".$rnaseq2files{"exonjunc"}{"count"},". You will need to run rnaseq-merge using --as T.\n";
+		print LOG "ERROR:no exonjunc count file found: ","$inputfolder/".$rnaseq2files{"exonjunc"}{"count"},". You will need to run rnaseq-merge using --as T.\n";
+		exit;
+	}
+
 }
 
 		
@@ -673,7 +699,9 @@ for(my $compnum=0;$compnum<@trts;$compnum++) {
 			system("cp $inputfolder/".$rnaseq2files{"tx"}{"count"}." $outputfolder_de/".$rnaseq2files{"tx"}{"selected"});
 			system("cp $inputfolder/".$rnaseq2files{"tx"}{"si"}." $outputfolder_de/".$rnaseq2files{"tx"}{"siselected"});
 			system("cp $inputfolder/".$rnaseq2files{"exon"}{"count"}." $outputfolder_de/".$rnaseq2files{"exon"}{"selected"});
-			system("cp $inputfolder/".$rnaseq2files{"exon"}{"si"}." $outputfolder_de/".$rnaseq2files{"exon"}{"siselected"});			
+			system("cp $inputfolder/".$rnaseq2files{"exon"}{"si"}." $outputfolder_de/".$rnaseq2files{"exon"}{"siselected"});
+			system("cp $inputfolder/".$rnaseq2files{"exonjunc"}{"count"}." $outputfolder_de/".$rnaseq2files{"exonjunc"}{"selected"});
+			system("cp $inputfolder/".$rnaseq2files{"exonjunc"}{"si"}." $outputfolder_de/".$rnaseq2files{"exonjunc"}{"siselected"});			
 		}
 	}
 	else {
@@ -698,6 +726,14 @@ for(my $compnum=0;$compnum<@trts;$compnum++) {
 			
 			#for SI
 			system("cut -f 1,".join(",",@sampleselrows)." $inputfolder/".$rnaseq2files{"exon"}{"si"}." > $outputfolder_de/".$rnaseq2files{"exon"}{"siselected"});				
+
+			#for DE
+			system("cut -f 1,".join(",",@sampleselrows)." $inputfolder/".$rnaseq2files{"exonjunc"}{"count"}." > $outputfolder_de/".$rnaseq2files{"exonjunc"}{"selected"});
+			
+			#for SI
+			system("cut -f 1,".join(",",@sampleselrows)." $inputfolder/".$rnaseq2files{"exonjunc"}{"si"}." > $outputfolder_de/".$rnaseq2files{"exonjunc"}{"siselected"});				
+
+			
 		}
 	}
 
@@ -724,7 +760,7 @@ for(my $compnum=0;$compnum<@trts;$compnum++) {
 		print S1 "$mergefiles -m $outputfolder_de/",$rnaseq2files{"tx"}{"result"}," -i ".$tx2ref{$tx}{"txanno"}." -o $outputfolder_de/",$rnaseq2files{"tx"}{"resultanno"},";\n";
 		
 		#Tx AS
-		print S1 "$descript -i $outputfolder_de/",$rnaseq2files{"tx"}{"siselected"}," -c $newconfigfile -o $outputfolder_de/",$rnaseq2files{"tx"}{"siresult"}," -f \"$formula\" -t $trt -r $ref --fccutoff $fccutoff --qcutoff $qcutoff --qmethod $qmethod --pmethod Lm --filter 0.001 > $outputfolder_de/tx_as_test_run.log 2>&1;";
+		print S1 "$descript -i $outputfolder_de/",$rnaseq2files{"tx"}{"siselected"}," -c $newconfigfile -o $outputfolder_de/",$rnaseq2files{"tx"}{"siresult"}," -f \"$formula\" -t $trt -r $ref --fccutoff $sifccutoff --qcutoff $siqcutoff --qmethod $qmethod --pmethod Lm --filter 0.001 > $outputfolder_de/tx_as_test_run.log 2>&1;";
 
 		#tx AS anno
 		print S1 "$mergefiles -m $outputfolder_de/",$rnaseq2files{"tx"}{"siresult"}," -i ".$tx2ref{$tx}{"txanno"}." -o $outputfolder_de/",$rnaseq2files{"tx"}{"siresultanno"},";\n";		
@@ -740,7 +776,7 @@ for(my $compnum=0;$compnum<@trts;$compnum++) {
 		print S1 "$mergefiles -m $outputfolder_de/",$rnaseq2files{"exon"}{"result"}," -i ".$tx2ref{$tx}{"exonanno"}." -o $outputfolder_de/",$rnaseq2files{"exon"}{"resultanno"},";\n";
 		
 		#exon AS
-		print S1 "$descript -i $outputfolder_de/",$rnaseq2files{"exon"}{"siselected"}," -c $newconfigfile -o $outputfolder_de/",$rnaseq2files{"exon"}{"siresult"}," -f \"$formula\" -t $trt -r $ref --fccutoff $fccutoff --qcutoff $qcutoff --qmethod $qmethod --pmethod Lm --filter 0.001 > $outputfolder_de/exon_as_test_run.log 2>&1;";
+		print S1 "$descript -i $outputfolder_de/",$rnaseq2files{"exon"}{"siselected"}," -c $newconfigfile -o $outputfolder_de/",$rnaseq2files{"exon"}{"siresult"}," -f \"$formula\" -t $trt -r $ref --fccutoff $sifccutoff --qcutoff $siqcutoff --qmethod $qmethod --pmethod Lm --filter 0.001 > $outputfolder_de/exon_as_test_run.log 2>&1;";
 
 		#exon AS anno
 		print S1 "$mergefiles -m $outputfolder_de/",$rnaseq2files{"exon"}{"siresult"}," -i ".$tx2ref{$tx}{"exonanno"}." -o $outputfolder_de/",$rnaseq2files{"exon"}{"siresultanno"},";\n";		
@@ -748,6 +784,21 @@ for(my $compnum=0;$compnum<@trts;$compnum++) {
 		#exon AS summary
 		print S2 "$summarize_exonsi --tx $tx -g $outputfolder_de/",$rnaseq2files{"gene"}{"result"}," --td $outputfolder_de/",$rnaseq2files{"tx"}{"result"}," --ts $outputfolder_de/",$rnaseq2files{"tx"}{"siresultanno"}," --ed $outputfolder_de/",$rnaseq2files{"exon"}{"result"}," --es $outputfolder_de/",$rnaseq2files{"exon"}{"siresultanno"}, " -o $outputfolder_de/",$rnaseq2files{"exon"}{"siresultsummary"}," > $outputfolder_de/exon_as_summary_run.log 2>&1;\n";
 
+
+		#exon junc DE
+		print S1 "$descript -i $outputfolder_de/",$rnaseq2files{"exonjunc"}{"selected"}," -c $newconfigfile -o $outputfolder_de/",$rnaseq2files{"exonjunc"}{"result"}," -f \"$formula\" -t $trt -r $ref --fccutoff $fccutoff --qcutoff $qcutoff --qmethod $qmethod --pmethod $pmethod --filter $filter --independentfiltering $independentfiltering --cookscutoff $cookscutoff > $outputfolder_de/exonjunc_de_test_run.log 2>&1;";
+
+		#exonjunc anno
+		print S1 "$mergefiles -m $outputfolder_de/",$rnaseq2files{"exonjunc"}{"result"}," -i $inputfolder/".$rnaseq2files{"exonjunc"}{"anno"}." -o $outputfolder_de/",$rnaseq2files{"exonjunc"}{"resultanno"},";\n";
+		
+		#exonjunc AS
+		print S1 "$descript -i $outputfolder_de/",$rnaseq2files{"exonjunc"}{"siselected"}," -c $newconfigfile -o $outputfolder_de/",$rnaseq2files{"exonjunc"}{"siresult"}," -f \"$formula\" -t $trt -r $ref --fccutoff $sifccutoff --qcutoff $siqcutoff --qmethod $qmethod --pmethod Lm --filter 0.001 > $outputfolder_de/exonjunc_as_test_run.log 2>&1;";
+
+		#exonjunc AS anno
+		print S1 "$mergefiles -m $outputfolder_de/",$rnaseq2files{"exonjunc"}{"siresult"}," -i $inputfolder/".$rnaseq2files{"exonjunc"}{"anno"}." -o $outputfolder_de/",$rnaseq2files{"exonjunc"}{"siresultanno"},";\n";		
+	
+		#exonjunc AS summary
+		#print S2 "$summarize_exonjuncsi --tx $tx -g $outputfolder_de/",$rnaseq2files{"gene"}{"result"}," --td $outputfolder_de/",$rnaseq2files{"tx"}{"result"}," --ts $outputfolder_de/",$rnaseq2files{"tx"}{"siresultanno"}," --ed $outputfolder_de/",$rnaseq2files{"exonjunc"}{"result"}," --es $outputfolder_de/",$rnaseq2files{"exonjunc"}{"siresultanno"}, " -o $outputfolder_de/",$rnaseq2files{"exonjunc"}{"siresultsummary"}," > $outputfolder_de/exonjunc_as_summary_run.log 2>&1;\n";
 			
 	}
 }

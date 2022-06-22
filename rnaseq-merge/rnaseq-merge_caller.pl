@@ -202,7 +202,7 @@ my $exoncountmerged="exon.results.merged.count.txt";
 my $exoncountsi="exon.results.merged.count.si.txt";
 
 my $exonjunccountmerged="exonjunc.results.merged.count.txt";
-my $exonjuncanno="exonjunc.anno.txt";
+my $exonjuncanno="exonjuncanno.txt";
 my $exonjunccountsi="exonjunc.results.merged.count.si.txt";
 
 #Create folders

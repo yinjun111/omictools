@@ -28,6 +28,8 @@ Parameters:
     --in|-i           Inputfile
     --output|-o       Outputfile
 
+    --type            Input type, featurecounts or rnaseq-merge [rnaseq-merge]
+
     --tx|-t           Transcriptome
                         Currently support Human.B38.Ensembl88,Mouse.B38.Ensembl88,Rat.Rn6.Ensembl88
 
@@ -53,6 +55,7 @@ my $params=join(" ",@ARGV);
 
 my $inputfile;
 my $outputfile;
+my $type="rnaseq-merge";
 my $tx;
 my $verbose=1;
 
@@ -62,6 +65,8 @@ GetOptions(
 	"in|i=s" => \$inputfile,
 	"output|o=s" => \$outputfile,
 	"tx|t=s" => \$tx,
+	
+	"type=s" => \$type,
 	
 	"verbose|v" => \$verbose,
 	
@@ -203,10 +208,25 @@ print OUT "Exonjunc\tExonjuncNames\tGeneID\tGeneName\tEvidences\tType\tStartExon
 
 while(<IN>) {
 	tr/\r\n//d;
-	next if $_=~/^Exon/;	
+	next if $_=~/^Exon|PrimaryGene/;
 	my @array=split/\t/;
 
-	my ($ejchr,$ejstart,$ejend,$ejstr)=split("_",$array[0]);
+	#decide exon junc location
+	my ($ejchr,$ejstart,$ejend,$ejstr,$exonjuncid);
+	
+	if($type eq "rnaseq-merge") {
+		($ejchr,$ejstart,$ejend,$ejstr)=split("_",$array[0]);
+		$exonjuncid=$array[0];
+	}
+	else {
+		($ejchr,$ejstart,$ejend,$ejstr)=@array[2,3,6,4];
+
+		if($ejstr eq "NA") {
+			$ejstr=".";
+		}
+		
+		$exonjuncid=join("_",$ejchr,$ejstart,$ejend,$ejstr);
+	}
 	
 	my %sexon;
 	my %eexon;
@@ -291,7 +311,7 @@ while(<IN>) {
 	#output file
 	#print OUT "Exonjunc\tExonjuncNames\tType\tStartExon\tEndExon\tTxID\tTxName\tGeneID\tGeneName\n";
 	
-	print OUT $array[0],"\t";
+	print OUT $exonjuncid,"\t";
 	
 	#assigned junc names
 	if(keys %exonjuncnames) {
