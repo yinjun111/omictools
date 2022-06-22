@@ -132,7 +132,7 @@ open(IN,$inputfile) || die $!;
 open(OUT,">$outputfile") || die $!;
 
 my $samplename;
-if($infile=~/([^\/]+)_featurecounts_exon.txt.jcounts/) {
+if($inputfile=~/([^\/]+)_featurecounts_exon.txt.jcounts/) {
 	$samplename=$1;
 }
 else {

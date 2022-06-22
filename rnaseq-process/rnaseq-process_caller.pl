@@ -625,7 +625,7 @@ foreach my $sample (sort keys %sample2fastq) {
 
 		if($as eq "T") {
 			#exon & exon junc counts
-			$sample2workflow{$sample}.="$featurecounts -p -O -J -T $threads -f -t exon -g exon_id -a ".$tx2ref{$tx}{"gtf"}." -o $samplefolder/$sample\_featurecounts_exon.txt $samplefolder/$sample\_Aligned.sortedByCoord.out.bam;";
+			$sample2workflow{$sample}.="$featurecounts -p -O -J -T $threads -f -t exon -g exon_id -a ".$tx2ref{$tx}{"gtf"}." -o $samplefolder/$sample\_featurecounts_exon.txt $samplefolder/$sample\_Aligned.sortedByCoord.out.bam > $featurecountslog 2>&1;";
 		}
 		
 	}
@@ -660,7 +660,7 @@ foreach my $sample (sort keys %sample2fastq) {
 		
 		if($as eq "T") {
 			#exon & exon junc counts
-			$sample2workflow{$sample}.="$featurecounts -O -J -T $threads -f -t exon -g exon_id -a ".$tx2ref{$tx}{"gtf"}." -o $samplefolder/$sample\_featurecounts_exon.txt $samplefolder/$sample\_Aligned.sortedByCoord.out.bam;";
+			$sample2workflow{$sample}.="$featurecounts -O -J -T $threads -f -t exon -g exon_id -a ".$tx2ref{$tx}{"gtf"}." -o $samplefolder/$sample\_featurecounts_exon.txt $samplefolder/$sample\_Aligned.sortedByCoord.out.bam > $featurecountslog 2>&1;";
 		}
 		
 	}
@@ -668,10 +668,7 @@ foreach my $sample (sort keys %sample2fastq) {
 	#shared analyses for PE & SE
 	
 	#--as tag to use featureCounts
-	if($as eq "T") {
-		#exon & exon junc counts
-		$sample2workflow{$sample}.="$featurecounts -p -O -J -T $threads -f -t exon -g exon_id -a ".$tx2ref{$tx}{"gtf"}." -o $samplefolder/$sample\_featurecounts_exon.txt $samplefolder/$sample\_Aligned.sortedByCoord.out.bam;";
-		
+	if($as eq "T") {		
 		#convert to bed and gtf
 		$sample2workflow{$sample}.="$anno_exonjunc -i $samplefolder/$sample\_featurecounts_exon.txt.jcounts --tx $tx --type featurecounts -o $samplefolder/$sample\_featurecounts_exon.txt.jcounts_anno.txt;";
 		
