@@ -12,8 +12,9 @@ use File::Basename qw(basename dirname);
 ########
 
 
-my $version="0.1";
+my $version="0.2";
 
+#v0.2, fix bugs for names
 
 my $usage="
 
@@ -318,7 +319,7 @@ while(<IN>) {
 		print OUT join(",",sort keys %exonjuncnames),"\t";
 	}
 	else {
-		print OUT " \t";
+		print OUT "$exonjuncid\t";
 	}
 	
 	#gene names
