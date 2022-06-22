@@ -582,20 +582,21 @@ else {
 		
 	
 #----------------
-#STAR & RSEM for trimmed reads
+#STAR & RSEM & featurecounts for trimmed reads
 
-if(defined $configattrs{"FASTQ2"}) {
-	#PE
-	print STDERR "Printing RSEM PE script.\n\n" if $verbose;
-	print LOG "Printing RSEM PE script.\n\n";
-
-	#     rsem-calculate-expression [options] --paired-end upstream_read_file(s) downstream_read_file(s) reference_name sample_name 
 	
-	foreach my $sample (sort keys %sample2fastq) {
-		my $samplefolder="$outputfolder/$sample";
-		
-		my $rsemlog="$samplefolder/$sample\_rsem.log";
-		my $starlog="$samplefolder/$sample\_star.log";
+foreach my $sample (sort keys %sample2fastq) {
+	my $samplefolder="$outputfolder/$sample";
+	
+	my $rsemlog="$samplefolder/$sample\_rsem.log";
+	my $starlog="$samplefolder/$sample\_star.log";
+	my $featurecountslog="$samplefolder/$sample\_featurecounts.log";
+
+	if(defined $configattrs{"FASTQ2"}) {
+		#PE
+		print STDERR "Printing RSEM PE script.\n\n" if $verbose;
+		print LOG "Printing RSEM PE script.\n\n";
+
 		
 		#$sample2workflow{$sample}.="$rsem -p 4 --output-genome-bam --sort-bam-by-coordinate --star-gzipped-read-file --star --paired-end ".$sample2fastq{$sample}[2]." ".$sample2fastq{$sample}[3]." ".$tx2ref{$tx}." $samplefolder/$sample > $rsemlog 2>&1;";
 		
@@ -621,37 +622,11 @@ if(defined $configattrs{"FASTQ2"}) {
 		$sample2workflow{$sample}.="$rsem -p $threads --paired-end --bam $samplefolder/$sample\_Aligned.toTranscriptome.out.bam ".$tx2ref{$tx}{"rsem"}." $samplefolder/$sample > $rsemlog 2>&1;";
 		
 		$tempfiles2rm{$sample}{"$samplefolder/$sample.transcript.bam"}++;
-
-		#--as tag to use featureCounts
-		if($as eq "T") {
-			#exon & exon junc counts
-			$sample2workflow{$sample}.="$featurecounts -p -O -J -T $threads -f -t exon -g exon_id -a ".$tx2ref{$tx}{"gtf"}." -o $samplefolder/$sample\_featurecounts_exon.txt $samplefolder/$sample\_Aligned.sortedByCoord.out.bam;";
-			
-			#convert to bed and gtf
-			$sample2workflow{$sample}.="$anno_exonjunc -i $samplefolder/$sample\_featurecounts_exon.txt.jcounts --tx $tx --type featurecounts -o $samplefolder/$sample\_featurecounts_exon.txt.jcounts_anno.txt;";
-			
-			$sample2workflow{$sample}.="$exonjunc2bed -i $samplefolder/$sample\_featurecounts_exon.txt.jcounts -a $samplefolder/$sample\_featurecounts_exon.txt.jcounts_anno.txt -o $samplefolder/$sample\_featurecounts_exon.txt.jcounts.bed;";
-			
-			$sample2workflow{$sample}.="$exonjunc2gtf -i $samplefolder/$sample\_featurecounts_exon.txt.jcounts -a $samplefolder/$sample\_featurecounts_exon.txt.jcounts_anno.txt -o $samplefolder/$sample\_featurecounts_exon.txt.jcounts.gtf;";
-						
-		}
-		
-		if($runbamcoverage eq "T") {
-			$sample2workflow{$sample}.="$bamcoverage --numberOfProcessors $threads --bam $samplefolder/$sample\_Aligned.sortedByCoord.out.bam --normalizeUsing CPM --binSize 5 -o $samplefolder/$sample\_Aligned.sortedByCoord.out.bw;";
-		}
 	}
-}
-else {
-	#SE
-	print STDERR "Printing RSEM SE script.\n\n" if $verbose;
-	print LOG "Printing RSEM SE script.\n\n";
-
-	
-	foreach my $sample (sort keys %sample2fastq) {
-		my $samplefolder="$outputfolder/$sample";
-		my $starlog="$samplefolder/$sample\_star.log";
-		my $rsemlog="$samplefolder/$sample\_rsem.log";
-		my $featurecountslog="$samplefolder/$sample\_featurecounts.log";
+	else {
+		#SE
+		print STDERR "Printing RSEM SE script.\n\n" if $verbose;
+		print LOG "Printing RSEM SE script.\n\n";
 		
 		#$sample2workflow{$sample}.="$rsem -p 4 --output-genome-bam --sort-bam-by-coordinate --star-gzipped-read-file --star ".$sample2fastq{$sample}[1]." ".$tx2ref{$tx}." $samplefolder/$sample > $rsemlog 2>&1;";
 		
@@ -676,25 +651,30 @@ else {
 		$sample2workflow{$sample}.="$rsem -p $threads --bam $samplefolder/$sample\_Aligned.toTranscriptome.out.bam ".$tx2ref{$tx}{"rsem"}." $samplefolder/$sample > $rsemlog 2>&1;";
 		
 		$tempfiles2rm{$sample}{"$samplefolder/$sample.transcript.bam"}++;
-		
-		#--as tag to use featureCounts
-		if($as eq "T") {
-			$sample2workflow{$sample}.="$featurecounts -O -J -T $threads -f -t exon -g exon_id -a ".$tx2ref{$tx}{"gtf"}." -o $samplefolder/$sample\_featurecounts_exon.txt $samplefolder/$sample\_Aligned.sortedByCoord.out.bam;";
-			
-			#convert to bed and gtf
-			$sample2workflow{$sample}.="$anno_exonjunc -i $samplefolder/$sample\_featurecounts_exon.txt.jcounts --tx $tx --type featurecounts -o $samplefolder/$sample\_featurecounts_exon.txt.jcounts_anno.txt;";
-			
-			$sample2workflow{$sample}.="$exonjunc2bed -i $samplefolder/$sample\_featurecounts_exon.txt.jcounts -a $samplefolder/$sample\_featurecounts_exon.txt.jcounts_anno.txt -o $samplefolder/$sample\_featurecounts_exon.txt.jcounts.bed;";
-			
-			$sample2workflow{$sample}.="$exonjunc2gtf -i $samplefolder/$sample\_featurecounts_exon.txt.jcounts -a $samplefolder/$sample\_featurecounts_exon.txt.jcounts_anno.txt -o $samplefolder/$sample\_featurecounts_exon.txt.jcounts.gtf;";
-
-		}
-		
-		if($runbamcoverage eq "T") {
-			$sample2workflow{$sample}.="$bamcoverage --numberOfProcessors $threads --bam $samplefolder/$sample\_Aligned.sortedByCoord.out.bam --normalizeUsing CPM --binSize 5 -o $samplefolder/$sample\_Aligned.sortedByCoord.out.bw;";
-		}
 	}
+	
+	
+	
+	#--as tag to use featureCounts
+	if($as eq "T") {
+		#exon & exon junc counts
+		$sample2workflow{$sample}.="$featurecounts -p -O -J -T $threads -f -t exon -g exon_id -a ".$tx2ref{$tx}{"gtf"}." -o $samplefolder/$sample\_featurecounts_exon.txt $samplefolder/$sample\_Aligned.sortedByCoord.out.bam;";
+		
+		#convert to bed and gtf
+		$sample2workflow{$sample}.="$anno_exonjunc -i $samplefolder/$sample\_featurecounts_exon.txt.jcounts --tx $tx --type featurecounts -o $samplefolder/$sample\_featurecounts_exon.txt.jcounts_anno.txt;";
+		
+		$sample2workflow{$sample}.="$exonjunc2bed -i $samplefolder/$sample\_featurecounts_exon.txt.jcounts -a $samplefolder/$sample\_featurecounts_exon.txt.jcounts_anno.txt -o $samplefolder/$sample\_featurecounts_exon.txt.jcounts.bed;";
+		
+		$sample2workflow{$sample}.="$exonjunc2gtf -i $samplefolder/$sample\_featurecounts_exon.txt.jcounts -a $samplefolder/$sample\_featurecounts_exon.txt.jcounts_anno.txt -o $samplefolder/$sample\_featurecounts_exon.txt.jcounts.gtf;";
+					
+	}
+	
+	if($runbamcoverage eq "T") {
+		$sample2workflow{$sample}.="$bamcoverage --numberOfProcessors $threads --bam $samplefolder/$sample\_Aligned.sortedByCoord.out.bam --normalizeUsing CPM --binSize 5 -o $samplefolder/$sample\_Aligned.sortedByCoord.out.bw;";
+	}
+
 }
+
 
 
 
