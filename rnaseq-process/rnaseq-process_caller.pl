@@ -622,6 +622,12 @@ foreach my $sample (sort keys %sample2fastq) {
 		$sample2workflow{$sample}.="$rsem -p $threads --paired-end --bam $samplefolder/$sample\_Aligned.toTranscriptome.out.bam ".$tx2ref{$tx}{"rsem"}." $samplefolder/$sample > $rsemlog 2>&1;";
 		
 		$tempfiles2rm{$sample}{"$samplefolder/$sample.transcript.bam"}++;
+
+		if($as eq "T") {
+			#exon & exon junc counts
+			$sample2workflow{$sample}.="$featurecounts -p -O -J -T $threads -f -t exon -g exon_id -a ".$tx2ref{$tx}{"gtf"}." -o $samplefolder/$sample\_featurecounts_exon.txt $samplefolder/$sample\_Aligned.sortedByCoord.out.bam;";
+		}
+		
 	}
 	else {
 		#SE
@@ -651,9 +657,15 @@ foreach my $sample (sort keys %sample2fastq) {
 		$sample2workflow{$sample}.="$rsem -p $threads --bam $samplefolder/$sample\_Aligned.toTranscriptome.out.bam ".$tx2ref{$tx}{"rsem"}." $samplefolder/$sample > $rsemlog 2>&1;";
 		
 		$tempfiles2rm{$sample}{"$samplefolder/$sample.transcript.bam"}++;
+		
+		if($as eq "T") {
+			#exon & exon junc counts
+			$sample2workflow{$sample}.="$featurecounts -O -J -T $threads -f -t exon -g exon_id -a ".$tx2ref{$tx}{"gtf"}." -o $samplefolder/$sample\_featurecounts_exon.txt $samplefolder/$sample\_Aligned.sortedByCoord.out.bam;";
+		}
+		
 	}
 	
-	
+	#shared analyses for PE & SE
 	
 	#--as tag to use featureCounts
 	if($as eq "T") {
