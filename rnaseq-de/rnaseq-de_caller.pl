@@ -88,10 +88,10 @@ Alternative Splicing Analyses Parameters:
     --sifccutoff      Log2 FC cutoff, Log2(1.2)=0.263 [0.263]
     --siqcutoff       Corrected P cutoff [0.05]
 
-    --runmode|-r      Where to run the scripts, cluster, local or none [none]
-                           Note: In the new update, rnaseq-de supports cluster now
 
 #Parameters for HPC
+    --runmode|-r      Where to run the scripts, cluster, local or none [none]
+                           Note: In the new update, rnaseq-de supports cluster now
 
     --task            Number of tasks to be paralleled. By default by the number of commands in submitted jobs.
 
