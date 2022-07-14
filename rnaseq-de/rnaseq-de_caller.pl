@@ -88,6 +88,8 @@ Alternative Splicing Analyses Parameters:
     --sifccutoff      Log2 FC cutoff, Log2(1.2)=0.263 [0.263]
     --siqcutoff       Corrected P cutoff [0.05]
 
+    --runmode|-r      Where to run the scripts, cluster, local or none [none]
+                           Note: In the new update, rnaseq-de supports cluster now
 
 #Parameters for HPC
 
@@ -108,8 +110,6 @@ Alternative Splicing Analyses Parameters:
 
 
 
-    --runmode|-r      Where to run the scripts, local or none [none]
-                           Note: cluster doesn't work for now for rnaseq-de, due to R pkg dependency
 
 
 ";
