@@ -9,8 +9,9 @@ use File::Basename qw(basename dirname);
 ########
 
 
-my $version="0.1";
+my $version="0.11";
 
+#0.11, if $input doesn't exist, quit.
 
 my $usage="
 
@@ -96,7 +97,16 @@ my %configattrs;
 my %samples;
 my %fastq2sample;
 
+
+#check input file
+unless(-e $infile) {
+	print STDERR "ERROR:$infile doesn't exist. Quit.\n";
+	exit;
+}
+
+
 #read config file to find fastq name
+
 open(IN,$configfile) || die $!;
 my $fileline=0;
 
