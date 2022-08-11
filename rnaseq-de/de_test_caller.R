@@ -10,7 +10,7 @@ library(argparser,quietly =T)
 #Version
 ####
 
-version="0.72"
+version="0.8"
 
 #0.2b, change auto filter to *5. Add indfilter and cookscutoff option
 #0.23, add write_table_proper
@@ -27,6 +27,7 @@ version="0.72"
 #0.7, add LM based analysis for Splicing Index etc.
 #0.71, change significance column name
 #0.72, add inf removal
+#0.8, add NOISeq to support no replicate
 
 description=paste0("de_test\nversion ",version,"\n","Usage:\nDescription: Differential Expression calculation\n")
 
@@ -75,6 +76,7 @@ core=1
 
 library(DESeq2,quietly =T)
 library(ggplot2,quietly =T)
+library(NOISeq,quietly =T)
 library(EnhancedVolcano,quietly =T)
 library(Cairo,quietly =T)
 
@@ -227,6 +229,58 @@ deseq2_test_v1 <- function(mat,anno,design,fc_cutoff=1,q_cutoff=0.05,pmethod="Wa
 	return(result)
 }
 
+######
+#NOISeq for single rep
+######
+
+noiseq_test_norep <- function(mat,anno,design,fc_cutoff=1,q_cutoff=0.05,treat,ref){
+
+	#noiseq for single replicate
+
+	#Get the last variable
+	design<-gsub(" ","",design)
+	design.vars<-gsub("~","",design)
+	design.vars<-unlist(strsplit(design.vars,"\\+"))
+	
+	#change treat and ref names
+	treat.m=make.names(treat)
+	ref.m=make.names(ref)
+	
+	#anno relevel column for last variable #only works for 1vs1 for the selected col
+	#convert to factor
+	anno[,design.vars[length(design.vars)]]<-factor(make.names(anno[,design.vars[length(design.vars)]]),levels=c(treat.m,ref.m))
+	
+	#create noiseq data
+	mydata<-readData(data = mat,factors = anno)
+
+	#de test
+	myresults<-noiseq(mydata, factor = design.vars[length(design.vars)], k = NULL, norm = "tmm", replicates = "no")
+	
+	res<-myresults@results[[1]]
+	
+	fc<-res[,3]
+	p<-1-res[,5]
+	q<-p #in noiseq, p is q
+	stat<-apply(res[,c(3,4,6)],1,function(x) {paste(x,collapse = ",")})
+	
+	#significance by fc & qval
+	sig<-rep(0,length(q))
+	
+	sig[!is.na(fc) & fc>=fc_cutoff & !is.na(q) & q<q_cutoff]=1
+	sig[!is.na(fc) & fc<=-fc_cutoff & !is.na(q) & q<q_cutoff]=-1
+	sig[is.na(fc) | is.na(q) ]=NA
+
+	mat.result<-cbind(fc,stat,p,q,sig)
+	
+	colnames(mat.result)<-c(paste0("Log2FC ",treat," vs ",ref),"NOISeq Stat:M,D,ranking","Q (1-prob)","Q (1-prob)",paste("Significance: Abs(Log2FC)>=",round(fc_cutoff,3)," ","Q<",q_cutoff,sep=""))
+	
+	result<-list()
+	result$result=mat.result
+	result$mydata=mydata
+	result$res=res
+
+	return(result)
+}
 
 ######
 #LM
@@ -620,6 +674,8 @@ if(args$pmethod == "DESeq2-Wald" | args$pmethod == "Wald") {
 	data.sel.result<-deseq2_test(mat=data.sel,anno=config,design=args$formula,fc_cutoff=args$fccutoff,q_cutoff=args$qcutoff,pmethod=args$pmethod,qmethod=args$qmethod,treat=args$treat,ref=args$ref,independentfiltering=args$independentfiltering,cookscutoff=args$cookscutoff)
 } else if (args$pmethod == "Lm") {
 	data.sel.result<-lm_test(mat=data.sel,anno=config,design=args$formula,fc_cutoff=args$fccutoff,q_cutoff=args$qcutoff,pmethod=args$pmethod,qmethod=args$qmethod,treat=args$treat,ref=args$ref)
+} else if (args$pmethod == "NOISeq" | args$pmethod == "NOIseq") {
+	data.sel.result<-noiseq_test_norep(mat=data.sel,anno=config,design=args$formula,fc_cutoff=args$fccutoff,q_cutoff=args$qcutoff,treat=args$treat,ref=args$ref)
 }
 
 #write.table(data.sel.result$result,file=args$out,sep="\t",quote=F,col.names = NA)

@@ -11,7 +11,7 @@ use File::Basename qw(basename dirname);
 ########
 
 
-my $version="1.2";
+my $version="1.3";
 
 #version 0.2a, add r version log
 #v0.3 add runmode
@@ -28,6 +28,8 @@ my $version="1.2";
 #v1.0, fix for slurm envir, slurm tested
 #v1.1, add AS calculation
 #v1.2, add exon AS. add submit_job
+#v1.3, add NOISeq for no replicate
+
 
 my $usage="
 
@@ -65,7 +67,10 @@ Mandatory Parameters:
 						
 Optional Parameters:
     --pmethod         DESeq2 method, default as Wald test [DESeq2-Wald]
+                      For RNASeq without replicate, use NOISeq instead.
+
     --qmethod         Multiple testing correction method [BH]
+                      If NOISeq is used, no p value adjustment will be performed. No need to change qmethod option here.
 
     --useallsamples   Use all samples in config file for 
                            gene dispersion calcultation [F]
@@ -321,7 +326,7 @@ rinfo<-rbind(rinfo,c("R",R.Version()\$version.string))
 rinfo<-rbind(rinfo,c("Rscript","$Rscript"))
 rinfo<-rbind(rinfo,c("R library",paste(.libPaths(), collapse=",")))
 
-for (package in c("BiocManager","DESeq2","argparser","ggplot2","EnhancedVolcano")) {
+for (package in c("BiocManager","DESeq2","argparser","ggplot2","EnhancedVolcano","NOISeq")) {
 	rinfo<-rbind(rinfo,c(package,packageDescription(package,fields="Version")))
 }
 
