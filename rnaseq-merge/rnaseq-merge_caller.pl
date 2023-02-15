@@ -30,6 +30,7 @@ my $version="1.3";
 #v1.1, add AS calculation
 #v1.2, add exon support. add submit_job function
 #v1.3, add exon junc support
+#v1.31, turn as T as default
 
 my $usage="
 
@@ -57,7 +58,7 @@ Parameters:
 
     --anno|-a         Add annotation
 
-    --as              Prepare files for alternative splicing [F]
+    --as              Prepare files for alternative splicing [T]
 
     --filter          Signal filter [auto]
                          automatically defined signal cutoff as
@@ -111,7 +112,7 @@ my $outputfolder="02.Merge";
 my $verbose=1;
 my $tx;
 my $group="Group";
-my $as="F";
+my $as="T";
 my $task;
 my $ncpus=4;
 my $ppn=6;
