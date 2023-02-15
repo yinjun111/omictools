@@ -10,7 +10,7 @@ library(argparser,quietly =T)
 #Version
 ####
 
-version="0.8"
+version="0.81"
 
 #0.2b, change auto filter to *5. Add indfilter and cookscutoff option
 #0.23, add write_table_proper
@@ -28,6 +28,7 @@ version="0.8"
 #0.71, change significance column name
 #0.72, add inf removal
 #0.8, add NOISeq to support no replicate
+#0.81, change volcano plot colors
 
 description=paste0("de_test\nversion ",version,"\n","Usage:\nDescription: Differential Expression calculation\n")
 
@@ -436,7 +437,7 @@ volcano_plot_ggplot<-function(fc,q,sig,xlim=c(-7,7),ylim=c(0,30),xlab="Log2FC",y
 }
 
 enhanced_volcano_plot <- function(gene, fc, q, sig, labels = NULL, 
-                                  upcol = "red2", downcol = "blue2",
+                                  upcol = "#ca0020", downcol = "#0571b0",
                                   xlab = "Log2FC", ylab = "-log10 P", main = "Volcano Plot", 
                                   fc_cutoff = args$fccutoff, q_cutoff = args$q_cutof,xlim=c(-10,10),ylim=c(0,30)){
     
