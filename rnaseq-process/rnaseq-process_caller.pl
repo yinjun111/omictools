@@ -12,7 +12,7 @@ use File::Basename qw(basename dirname);
 ########
 
 
-my $version="1.2";
+my $version="1.21";
 
 #0.2b change ensembl to UCSC format
 #0.2c add bw generation
@@ -41,7 +41,7 @@ my $version="1.2";
 #v1.11, error mesage for fastq
 #v1.12, change as calculation as default
 #v1.2, add junction conversion to gtf/bed. AS analysis should be complete for rnaseq-process now.
-
+#v1.21, add RSeQC
 
 my $usage="
 
