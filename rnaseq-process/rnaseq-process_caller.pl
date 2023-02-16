@@ -256,7 +256,8 @@ my %tx2ref=(
 		"gtf"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.88_ucsc.gtf",
 		"homeranno"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.88_ucsc_homeranno.txt",
 		"geneanno"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.88_ucsc_gene_annocombo.txt",
-		"txanno"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.88_ucsc_tx_annocombo.txt"},
+		"txanno"=>"/data/jyin/Databases/Genomes/Human/hg38/Homo_sapiens.GRCh38.88_ucsc_tx_annocombo.txt",
+		"RSeQC"=>"/data/jyin/Databases/RSeQC/hg38_GENCODE_V42_Basic.bed"},
 	"Mouse.B38.Ensembl88"=>{ 
 		"star"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mouse.B38.Ensembl88_STAR",
 		"rsem"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mouse.B38.Ensembl88_STAR/Mouse_RSEM",
@@ -265,7 +266,8 @@ my %tx2ref=(
 		"gtf"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc.gtf",
 		"homeranno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_homeranno.txt",
 		"geneanno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_gene_annocombo.txt",
-		"txanno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_tx_annocombo.txt"},
+		"txanno"=>"/data/jyin/Databases/Genomes/Mouse/mm10/Mus_musculus.GRCm38.88_ucsc_tx_annocombo.txt",
+		"RSeQC"=>"/data/jyin/Databases/RSeQC/mm10_GENCODE_vm25.bed"},
 	"Rat.Rn6.Ensembl88"=>{ 
 		"star"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rat.Rn6.Ensembl88_STAR",
 		"rsem"=>"/data/jyin/Databases/Genomes/Rat/rn6/Rat.Rn6.Ensembl88_STAR/Rat_RSEM",
@@ -670,10 +672,12 @@ foreach my $sample (sort keys %sample2fastq) {
 	#shared analyses for PE & SE
 
 	#RSeQC, geneBoday_coverage read_distribution
-	$sample2workflow{$sample}.="$read_distribution -i $samplefolder/$sample\_Aligned.sortedByCoord.out.bam -r /data/jyin/Databases/RSeQC/hg38_GENCODE_V42_Basic.bed > $samplefolder/$sample\_read_distribution.txt;";
+	
+	if($tx ne "Rat.Rn6.Ensembl88") {
+		$sample2workflow{$sample}.="$read_distribution -i $samplefolder/$sample\_Aligned.sortedByCoord.out.bam -r ".$tx2ref{$tx}{"RSeQC"}." > $samplefolder/$sample\_read_distribution.txt;";
 
-	$sample2workflow{$sample}.="cd $samplefolder;$geneBoday_coverage -i $samplefolder/$sample\_Aligned.sortedByCoord.out.bam -r /data/jyin/Databases/RSeQC/hg38_GENCODE_V42_Basic.bed -o $samplefolder/$sample;mv log.txt $sample\_geneBoday_coverage.log;cd $outputfolder;";
-
+		$sample2workflow{$sample}.="cd $samplefolder;$geneBoday_coverage -i $samplefolder/$sample\_Aligned.sortedByCoord.out.bam -r ".$tx2ref{$tx}{"RSeQC"}." -o $samplefolder/$sample;mv log.txt $sample\_geneBoday_coverage.log;cd $outputfolder;";
+	}
 	
 	#--as tag to use featureCounts
 	if($as eq "T") {		
