@@ -670,9 +670,9 @@ foreach my $sample (sort keys %sample2fastq) {
 	#shared analyses for PE & SE
 
 	#RSeQC, geneBoday_coverage read_distribution
-	$sample2workflow{$sample}.="$read_distribution -i $samplefolder/$sample\_Aligned.sortedByCoord.out.bam -r /data/jyin/Databases/RSeQC/hg38_GENCODE_V42_Basic.bed > $samplefolder/$sample\_read_distribution.txt;"		
+	$sample2workflow{$sample}.="$read_distribution -i $samplefolder/$sample\_Aligned.sortedByCoord.out.bam -r /data/jyin/Databases/RSeQC/hg38_GENCODE_V42_Basic.bed > $samplefolder/$sample\_read_distribution.txt;";
 
-	$sample2workflow{$sample}.="$geneBoday_coverage -i $samplefolder/$sample\_Aligned.sortedByCoord.out.bam -r /data/jyin/Databases/RSeQC/hg38_GENCODE_V42_Basic.bed -o $samplefolder/$sample;"
+	$sample2workflow{$sample}.="$geneBoday_coverage -i $samplefolder/$sample\_Aligned.sortedByCoord.out.bam -r /data/jyin/Databases/RSeQC/hg38_GENCODE_V42_Basic.bed -o $samplefolder/$sample;";
 
 	
 	#--as tag to use featureCounts
