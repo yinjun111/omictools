@@ -188,6 +188,8 @@ my $star=find_program("/apps/STAR-2.7.8a/bin/Linux_x86_64/STAR");
 my $bamcoverage=find_program("/apps/anaconda3/bin/bamCoverage");
 my $samtools=find_program("/apps/samtools-1.12/bin/samtools");
 my $featurecounts=find_program("/apps/subread-2.0.3-Linux-x86_64/bin/featureCounts");
+my $geneBoday_coverage="/apps/anaconda3/bin/geneBody_coverage.py";
+my $read_distribution="/apps/anaconda3/bin/read_distribution.py";
 
 #######
 #Output folder
@@ -619,7 +621,7 @@ foreach my $sample (sort keys %sample2fastq) {
 		$sample2workflow{$sample}.="$samtools index $samplefolder/$sample\_Aligned.sortedByCoord.out.bam;";
 		
 		#RSEM 
-		$sample2workflow{$sample}.="$rsem -p $threads --paired-end --bam $samplefolder/$sample\_Aligned.toTranscriptome.out.bam ".$tx2ref{$tx}{"rsem"}." $samplefolder/$sample > $rsemlog 2>&1;";
+		$sample2workflow{$sample}.="$rsem -p $threads --paired-end --bam $samplefolder/$sample\_Aligned.toTranscriptome.out.bam ".$tx2ref{$tx}{"rsem"}." $samplefolder/$sample > $rsemlog 2>&1;";		
 		
 		$tempfiles2rm{$sample}{"$samplefolder/$sample.transcript.bam"}++;
 
@@ -666,6 +668,12 @@ foreach my $sample (sort keys %sample2fastq) {
 	}
 	
 	#shared analyses for PE & SE
+
+	#RSeQC, geneBoday_coverage read_distribution
+	$sample2workflow{$sample}.="$read_distribution -i $samplefolder/$sample\_Aligned.sortedByCoord.out.bam -r /data/jyin/Databases/RSeQC/hg38_GENCODE_V42_Basic.bed > $samplefolder/$sample\_read_distribution.txt;"		
+
+	$sample2workflow{$sample}.="$geneBoday_coverage -i $samplefolder/$sample\_Aligned.sortedByCoord.out.bam -r /data/jyin/Databases/RSeQC/hg38_GENCODE_V42_Basic.bed -o $samplefolder/$sample;"
+
 	
 	#--as tag to use featureCounts
 	if($as eq "T") {		
