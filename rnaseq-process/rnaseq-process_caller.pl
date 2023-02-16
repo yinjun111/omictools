@@ -66,6 +66,7 @@ Parameters:
 
     --as              Count reads for exon and exon junctions for alternative splicing [T]
     --bamcoverage     Produce bw file for bam files [F]
+    --genebodycov     Calculate geneBody_coverage [F]	
     --keepfastq       Keep Cutadapt trimmed Fastq [F]	
 
     --smartseq        Use this tag for smartseq adapter removal
@@ -123,6 +124,7 @@ my $tx;
 my $as="T";
 my $runbamcoverage="F";
 my $keepfastq="F";
+my $genebodycov="F";
 my $smartseq=0;
 my $mem="40gb";
 my $runmode="none";
@@ -142,7 +144,8 @@ GetOptions(
 	"tx|t=s" => \$tx,
 	"mem=s" => \$mem,
 	"as=s" => \$as,	
-	"bamcoverage=s" => \$runbamcoverage,	
+	"bamcoverage=s" => \$runbamcoverage,
+	"genebodycov=s" => \$genebodycov,	
 	"keepfastq=s" => \$keepfastq,	
 	"runmode|r=s" => \$runmode,		
 	"task=s" => \$task,
@@ -188,7 +191,7 @@ my $star=find_program("/apps/STAR-2.7.8a/bin/Linux_x86_64/STAR");
 my $bamcoverage=find_program("/apps/anaconda3/bin/bamCoverage");
 my $samtools=find_program("/apps/samtools-1.12/bin/samtools");
 my $featurecounts=find_program("/apps/subread-2.0.3-Linux-x86_64/bin/featureCounts");
-my $geneBoday_coverage="/apps/anaconda3/bin/geneBody_coverage.py";
+my $geneBody_coverage="/apps/anaconda3/bin/geneBody_coverage.py";
 my $read_distribution="/apps/anaconda3/bin/read_distribution.py";
 
 #######
@@ -671,12 +674,14 @@ foreach my $sample (sort keys %sample2fastq) {
 	
 	#shared analyses for PE & SE
 
-	#RSeQC, geneBoday_coverage read_distribution
+	#RSeQC, geneBody_coverage read_distribution
 	
 	if($tx ne "Rat.Rn6.Ensembl88") {
 		$sample2workflow{$sample}.="$read_distribution -i $samplefolder/$sample\_Aligned.sortedByCoord.out.bam -r ".$tx2ref{$tx}{"RSeQC"}." > $samplefolder/$sample\_read_distribution.txt;";
-
-		$sample2workflow{$sample}.="cd $samplefolder;$geneBoday_coverage -i $samplefolder/$sample\_Aligned.sortedByCoord.out.bam -r ".$tx2ref{$tx}{"RSeQC"}." -o $samplefolder/$sample;mv log.txt $sample\_geneBoday_coverage.log;cd $outputfolder;";
+		
+		if($genebodycov eq "T") {
+			$sample2workflow{$sample}.="cd $samplefolder;$geneBody_coverage -i $samplefolder/$sample\_Aligned.sortedByCoord.out.bam -r ".$tx2ref{$tx}{"RSeQC"}." -o $samplefolder/$sample;mv log.txt $sample\_geneBody_coverage.log;cd $outputfolder;";
+		}
 	}
 	
 	#--as tag to use featureCounts
