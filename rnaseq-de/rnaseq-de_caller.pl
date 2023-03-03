@@ -11,7 +11,7 @@ use File::Basename qw(basename dirname);
 ########
 
 
-my $version="1.3";
+my $version="1.31";
 
 #version 0.2a, add r version log
 #v0.3 add runmode
@@ -29,6 +29,7 @@ my $version="1.3";
 #v1.1, add AS calculation
 #v1.2, add exon AS. add submit_job
 #v1.3, add NOISeq for no replicate
+#v1.31, add sipcutoff
 
 
 my $usage="
@@ -91,6 +92,7 @@ Alternative Splicing Analyses Parameters:
     --as              Run Tx DE/AS tests for alternative splicing analyses for tx and exon [F]
 
     --sifccutoff      Log2 FC cutoff, Log2(1.2)=0.263 [0.263]
+    --sipcutoff       Raw P cutoff [2]
     --siqcutoff       Corrected P cutoff [0.05]
 
 
@@ -173,6 +175,7 @@ my $as="F";
 my $fccutoff=1;
 my $qcutoff=0.05;
 my $sifccutoff=0.263;
+my $sipcutoff=2;
 my $siqcutoff=0.05;
 my $independentfiltering="T";
 my $cookscutoff="T";
@@ -209,6 +212,7 @@ GetOptions(
 	"fccutoff=s" => \$fccutoff,
 	"qcutoff=s" => \$qcutoff,
 	"sifccutoff=s" => \$sifccutoff,
+	"sipcutoff=s" => \$sipcutoff,	
 	"siqcutoff=s" => \$siqcutoff,
 	
 	"as=s" => \$as,
