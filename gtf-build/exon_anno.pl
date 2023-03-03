@@ -71,6 +71,7 @@ my %exon2tx;
 
 my %gene2name;
 my %tx2name;
+my %tx2exonnum;
 my %exon2name;
 
 my %exon2info;
@@ -96,6 +97,10 @@ while(<IN>) {
 		$exon2gene{$attrs{"exon_id"}}{$attrs{"gene_id"}}++;
 		$exon2tx{$attrs{"exon_id"}}{$attrs{"transcript_id"}}=$attrs{"transcript_name"}.".E".$attrs{"exon_number"};
 		
+		if(!defined $tx2exonnum{$attrs{"transcript_id"}} || $attrs{"exon_number"}>$tx2exonnum{$attrs{"transcript_id"}}) {
+			$tx2exonnum{$attrs{"transcript_id"}}=$tx2exonnum{$attrs{"transcript_id"}};
+		}
+		
 		$exon2info{$attrs{"exon_id"}}=join("\t",@array[0,3,4,6],$array[4]-$array[3]+1);
 	}
 }
@@ -113,7 +118,9 @@ foreach my $exon (sort keys %exon2gene) {
 	#exon name #use the same order by transcript
 	my @exonnames;
 	foreach my $tx (sort keys %{$exon2tx{$exon}}) {
-		push @exonnames,$exon2tx{$exon}{$tx};
+		foreach my $exonname (@exonnames) {
+			push $exonname.".".$tx2exonnum{$tx},@{$exon2tx{$exon}{$tx}};
+		}
 	}
 	print OUT join(",",@exonnames),"\t";
 	
