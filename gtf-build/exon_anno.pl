@@ -118,9 +118,7 @@ foreach my $exon (sort keys %exon2gene) {
 	#exon name #use the same order by transcript
 	my @exonnames;
 	foreach my $tx (sort keys %{$exon2tx{$exon}}) {
-		foreach my $exonname (@{$exon2tx{$exon}{$tx}}) {
-			push @exonnames,$exonname.".".$tx2exonnum{$tx};
-		}
+		push @exonnames,$exon2tx{$exon}{$tx}.".".$tx2exonnum{$tx};
 	}
 	print OUT join(",",@exonnames),"\t";
 	
