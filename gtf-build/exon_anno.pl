@@ -119,7 +119,7 @@ foreach my $exon (sort keys %exon2gene) {
 	my @exonnames;
 	foreach my $tx (sort keys %{$exon2tx{$exon}}) {
 		foreach my $exonname (@{$exon2tx{$exon}{$tx}}) {
-			push $exonname.".".$tx2exonnum{$tx},@exonnames;
+			push @exonnames,$exonname.".".$tx2exonnum{$tx};
 		}
 	}
 	print OUT join(",",@exonnames),"\t";
