@@ -98,7 +98,7 @@ while(<IN>) {
 		$exon2tx{$attrs{"exon_id"}}{$attrs{"transcript_id"}}=$attrs{"transcript_name"}.".E".$attrs{"exon_number"};
 		
 		if(!defined $tx2exonnum{$attrs{"transcript_id"}} || $attrs{"exon_number"}>$tx2exonnum{$attrs{"transcript_id"}}) {
-			$tx2exonnum{$attrs{"transcript_id"}}=$tx2exonnum{$attrs{"transcript_id"}};
+			$tx2exonnum{$attrs{"transcript_id"}}=$attrs{"exon_number"};
 		}
 		
 		$exon2info{$attrs{"exon_id"}}=join("\t",@array[0,3,4,6],$array[4]-$array[3]+1);
