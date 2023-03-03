@@ -10,7 +10,7 @@ library(argparser,quietly =T)
 #Version
 ####
 
-version="0.81"
+version="0.82"
 
 #0.2b, change auto filter to *5. Add indfilter and cookscutoff option
 #0.23, add write_table_proper
@@ -29,6 +29,7 @@ version="0.81"
 #0.72, add inf removal
 #0.8, add NOISeq to support no replicate
 #0.81, change volcano plot colors
+#0.82, add p cutoff for lm test
 
 description=paste0("de_test\nversion ",version,"\n","Usage:\nDescription: Differential Expression calculation\n")
 
@@ -47,6 +48,7 @@ parser <- add_argument(parser, arg="--formula",short="-f", type="character", hel
 parser <- add_argument(parser, arg="--treat",short="-t", type="character", help = "treatment name")
 parser <- add_argument(parser, arg="--ref",short="-r", type="character", help = "reference name")
 parser <- add_argument(parser, arg="--fccutoff", type="float", help = "Log2 FC cutoff",default=1)
+parser <- add_argument(parser, arg="--pcutoff", type="float", help = "pcutoff",default=2)
 parser <- add_argument(parser, arg="--qcutoff", type="float", help = "qcutoff",default=0.05)
 parser <- add_argument(parser, arg="--pmethod",type="character", help = "Method used to calculate P value",default="DESeq2-Wald")
 parser <- add_argument(parser, arg="--qmethod",type="character", help = "FDR Method",default="BH")
@@ -286,7 +288,7 @@ noiseq_test_norep <- function(mat,anno,design,fc_cutoff=1,q_cutoff=0.05,treat,re
 ######
 #LM
 ######
-lm_test <- function(mat,anno,design,fc_cutoff=1,q_cutoff=0.05,pmethod="Wald",qmethod="BH",core=core,treat,ref,independentfiltering=T,cookscutoff=T,na.rm=0){
+lm_test <- function(mat,anno,design,fc_cutoff=1,p_cutoff=2,q_cutoff=0.05,pmethod="Wald",qmethod="BH",core=core,treat,ref,independentfiltering=T,cookscutoff=T,na.rm=0){
 
 	#Get the last variable
 	design<-gsub(" ","",design)
@@ -355,13 +357,13 @@ lm_test <- function(mat,anno,design,fc_cutoff=1,q_cutoff=0.05,pmethod="Wald",qme
 	#significance by fc & qval
 	sig<-rep(0,length(q))
 	
-	sig[!is.na(fc) & fc>=fc_cutoff & !is.na(q) & q<q_cutoff]=1
-	sig[!is.na(fc) & fc<=-fc_cutoff & !is.na(q) & q<q_cutoff]=-1
-	sig[is.na(fc) | is.na(q) ]=NA
+	sig[!is.na(fc) & fc>=fc_cutoff & !is.na(p) & p<p_cutoff & !is.na(q) & q<q_cutoff]=1
+	sig[!is.na(fc) & fc<=-fc_cutoff& !is.na(p) & p<p_cutoff & !is.na(q) & q<q_cutoff]=-1
+	sig[is.na(fc) | is.na(p) | is.na(q) ]=NA
 
 	mat.result<-cbind(fc,stat,p,q,sig)
 	
-	colnames(mat.result)<-c(paste0("Log2FC ",treat," vs ",ref),"Stat:F","P",paste(qmethod,"P"),paste("Significance: ",treat," vs ",ref," Abs(Log2FC)>=",round(fc_cutoff,3)," ",qmethod, "P<",q_cutoff,sep=""))
+	colnames(mat.result)<-c(paste0("Log2FC ",treat," vs ",ref),"Stat:F","P",paste(qmethod,"P"),paste("Significance: ",treat," vs ",ref," Abs(Log2FC)>=",round(fc_cutoff,3)," ","Lm P<",p_cutoff,qmethod, "P<",q_cutoff,sep=""))
 	
 	result<-list()
 	result$result=mat.result
@@ -674,7 +676,7 @@ rdatafile=sub(".txt$",".rdata",args$out,perl=T)
 if(args$pmethod == "DESeq2-Wald" | args$pmethod == "Wald") {
 	data.sel.result<-deseq2_test(mat=data.sel,anno=config,design=args$formula,fc_cutoff=args$fccutoff,q_cutoff=args$qcutoff,pmethod=args$pmethod,qmethod=args$qmethod,treat=args$treat,ref=args$ref,independentfiltering=args$independentfiltering,cookscutoff=args$cookscutoff)
 } else if (args$pmethod == "Lm") {
-	data.sel.result<-lm_test(mat=data.sel,anno=config,design=args$formula,fc_cutoff=args$fccutoff,q_cutoff=args$qcutoff,pmethod=args$pmethod,qmethod=args$qmethod,treat=args$treat,ref=args$ref)
+	data.sel.result<-lm_test(mat=data.sel,anno=config,design=args$formula,fc_cutoff=args$fccutoff,p_cutoff=args$pcutoff,q_cutoff=args$qcutoff,pmethod=args$pmethod,qmethod=args$qmethod,treat=args$treat,ref=args$ref)
 } else if (args$pmethod == "NOISeq" | args$pmethod == "NOIseq") {
 	data.sel.result<-noiseq_test_norep(mat=data.sel,anno=config,design=args$formula,fc_cutoff=args$fccutoff,q_cutoff=args$qcutoff,treat=args$treat,ref=args$ref)
 }
