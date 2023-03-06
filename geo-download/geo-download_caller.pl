@@ -145,6 +145,9 @@ while(<IN>) {
 		}
 		else {
 			if(defined $title2col{"Library Name"}) {
+				$sra2gsm{$array[0]}=$array[$title2col{"Library Name"}];
+				$sra2info{$array[0]}=[@array];
+				$gsm2sra{$array[$title2col{"Library Name"}]}{$array[0]}++; #One GSM ID may contain multiple SRAs			
 			}
 			elsif(defined $title2col{"GEO_Accession (exp)"}) {
 				$sra2gsm{$array[0]}=$array[$title2col{"GEO_Accession (exp)"}];
