@@ -15,12 +15,13 @@ use Text::CSV_XS;
 ########
 
 
-my $version="0.32";
+my $version="0.33";
 
 #v0.2, Fastq files for PE
 #v0.3, change to fasterq-dump
 #v0.31, able to read zipped file
 #v0.32, solved binary chars
+#v0.33, Library Name can be used for GSM
 
 my $usage="
 
@@ -143,9 +144,17 @@ while(<IN>) {
 			
 		}
 		else {
-			$sra2gsm{$array[0]}=$array[$title2col{"GEO_Accession (exp)"}];
-			$sra2info{$array[0]}=[@array];
-			$gsm2sra{$array[$title2col{"GEO_Accession (exp)"}]}{$array[0]}++; #One GSM ID may contain multiple SRAs
+			if(defined $title2col{"Library Name"}) {
+			}
+			elsif(defined $title2col{"GEO_Accession (exp)"}) {
+				$sra2gsm{$array[0]}=$array[$title2col{"GEO_Accession (exp)"}];
+				$sra2info{$array[0]}=[@array];
+				$gsm2sra{$array[$title2col{"GEO_Accession (exp)"}]}{$array[0]}++; #One GSM ID may contain multiple SRAs
+			}
+			else {
+				print STDERR "ERROR:Library Name or GEO_Accession (exp) needs to be defined in SRA.\n";
+				exit;
+			}
 		}
 	}
 	else {
