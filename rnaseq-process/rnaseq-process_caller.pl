@@ -193,6 +193,7 @@ my $samtools=find_program("/apps/samtools-1.12/bin/samtools");
 my $featurecounts=find_program("/apps/subread-2.0.3-Linux-x86_64/bin/featureCounts");
 my $geneBody_coverage="/apps/anaconda3/bin/geneBody_coverage.py";
 my $read_distribution="/apps/anaconda3/bin/read_distribution.py";
+my $tin="/apps/anaconda3/bin/tin.py";
 
 #######
 #Output folder
@@ -677,7 +678,12 @@ foreach my $sample (sort keys %sample2fastq) {
 	#RSeQC, geneBody_coverage read_distribution
 	
 	if($tx ne "Rat.Rn6.Ensembl88") {
+	
+		#read dist
 		$sample2workflow{$sample}.="$read_distribution -i $samplefolder/$sample\_Aligned.sortedByCoord.out.bam -r ".$tx2ref{$tx}{"RSeQC"}." > $samplefolder/$sample\_read_distribution.txt;";
+		
+		#TIN
+		$sample2workflow{$sample}.="cd $samplefolder;$tin -i $samplefolder/$sample\_Aligned.sortedByCoord.out.bam -r ".$tx2ref{$tx}{"RSeQC"}.";cd $outputfolder;";
 		
 		if($genebodycov eq "T") {
 			$sample2workflow{$sample}.="cd $samplefolder;$geneBody_coverage -i $samplefolder/$sample\_Aligned.sortedByCoord.out.bam -r ".$tx2ref{$tx}{"RSeQC"}." -o $samplefolder/$sample;mv log.txt $sample\_geneBody_coverage.log;cd $outputfolder;";
