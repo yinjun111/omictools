@@ -683,7 +683,7 @@ foreach my $sample (sort keys %sample2fastq) {
 		$sample2workflow{$sample}.="$read_distribution -i $samplefolder/$sample\_Aligned.sortedByCoord.out.bam -r ".$tx2ref{$tx}{"RSeQC"}." > $samplefolder/$sample\_read_distribution.txt;";
 		
 		#TIN
-		$sample2workflow{$sample}.="cd $samplefolder;$tin -i $samplefolder/$sample\_Aligned.sortedByCoord.out.bam -r ".$tx2ref{$tx}{"RSeQC"}.";cd $outputfolder;";
+		$sample2workflow{$sample}.="cd $samplefolder;$tin -i $samplefolder/$sample\_Aligned.sortedByCoord.out.bam -r ".$tx2ref{$tx}{"RSeQC"}.";mv log.txt $sample\_tin.log;cd $outputfolder;";
 		
 		if($genebodycov eq "T") {
 			$sample2workflow{$sample}.="cd $samplefolder;$geneBody_coverage -i $samplefolder/$sample\_Aligned.sortedByCoord.out.bam -r ".$tx2ref{$tx}{"RSeQC"}." -o $samplefolder/$sample;mv log.txt $sample\_geneBody_coverage.log;cd $outputfolder;";
