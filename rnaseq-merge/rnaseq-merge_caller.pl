@@ -198,6 +198,7 @@ my $txfpkmmerged="tx.results.merged.fpkm.txt";
 my $txcpmmerged="tx.results.merged.cpm.txt";
 
 my $txtpmsi="tx.results.merged.tpm.si.txt";
+my $txtinmerged="tx.results.merged.tin.txt";
 
 my $exoncountmerged="exon.results.merged.count.txt";
 my $exoncountsi="exon.results.merged.count.si.txt";
@@ -394,6 +395,7 @@ print LOG "\nReading sample folders.\n";
 
 my %sample2gene;
 my %sample2tx;
+my %sample2txtin;
 my %sample2exon;
 my %sample2exonjunc;
 my %sample2folder;
@@ -427,6 +429,11 @@ foreach my $infolder (split(",",$inputfolders)) {
 					if($samplefile=~/.isoforms.results/) {
 						$sample2tx{$samplename}=abs_path($samplefile);
 					}
+					
+					#tx tin
+					if($samplefile=~/tin.xls/) {
+						$sample2txtin{$samplename}=abs_path($samplefile);
+					}					
 					
 					if($as eq "T") {
 						#exon count
@@ -485,6 +492,7 @@ if($as eq "T") {
 
 system("cut -f 1 ".$sample2gene{$samples_array[0]}." > $tempfolder/genes.txt");
 system("cut -f 1 ".$sample2tx{$samples_array[0]}." > $tempfolder/txs.txt");
+system("cut -f 1 ".$sample2txtin{$samples_array[0]}." > $tempfolder/txs_bytin.txt"); #now using RSeQC genome annotation
 
 if($as eq "T") {
 	system("cut -f 1 ".$tx2ref{$tx}{"exonanno"}."> $tempfolder/exons.txt");
@@ -510,6 +518,7 @@ if($as eq "T") {
 #get all files
 my @genefiles;
 my @txfiles;
+my @txtinfiles;
 my @exonfiles;
 my @exonjuncfiles;
 
@@ -529,6 +538,15 @@ foreach my $sample (@samples_array) {
 	else {
 		print STDERR "ERROR: $sample isoform.results not defined in $inputfolders.\n\n";
 		print LOG "ERROR: $sample isoform.results not defined in $inputfolders.\n\n";
+		exit;
+	}
+
+	if(defined $sample2txtin{$sample}) {
+		push @txtinfiles,$sample2txtin{$sample};
+	}
+	else {
+		print STDERR "ERROR: $sample tin.xls not defined in $inputfolders.\n\n";
+		print LOG "ERROR: $sample tin.xls not defined in $inputfolders.\n\n";
 		exit;
 	}
 	
@@ -628,6 +646,14 @@ print S1 "tail -n +2 $tempfolder/$txfpkmmerged\_wrongtitle > $tempfolder/$txfpkm
 print S1 "cat $tempfolder/tx_title.txt $tempfolder/$txfpkmmerged\_notitle > $outputfolder/$txfpkmmerged;";
 print S1 "rm $tempfolder/$txfpkmmerged\_wrongtitle;rm $tempfolder/$txfpkmmerged\_notitle;";
 print S1 "\n";
+
+#tx tin
+print S1 "$mergefiles -m $tempfolder/txs_bytin.txt -i ",join(",",@txtinfiles)," -l 5 -o $tempfolder/$txtinmerged\_wrongtitle -v;";
+print S1 "tail -n +2 $tempfolder/$txtinmerged\_wrongtitle > $tempfolder/$txtinmerged\_notitle;";
+print S1 "cat $tempfolder/tx_title.txt $tempfolder/$txtinmerged\_notitle > $outputfolder/$txtinmerged;";
+print S1 "rm $tempfolder/$txtinmerged\_wrongtitle;rm $tempfolder/$txtinmerged\_notitle;";
+print S1 "\n";
+
 
 #exon count
 
