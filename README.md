@@ -3,7 +3,9 @@
 Omictools suite for omics data processing in AWS HPC environment.
 
 omictools
+
 version: $version
+
 Usage: omictools [tool] [parameters]
 
 
