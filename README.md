@@ -22,6 +22,14 @@ Parameters:
     rnaseq-var        RNA-seq variant calling pipeline
 
     ########
+    #ChIP-Seq
+    ########
+    chipseq-process    ChIP-seq/ATAC-seq QC, Align, Peak calling and Counting for FASTQ files
+    chipseq-merge      Merge chipseq-process results for downstream analyses
+    chipseq-de         Perform DE analyses for ChIP-seq peaks
+    chipseq-summary    Summarize ChIP-Seq results
+
+    ########
     #AWS
     ########
     parallel-job      Batch job submission to HPC
