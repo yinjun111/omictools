@@ -30,6 +30,12 @@ Parameters:
     chipseq-summary    Summarize ChIP-Seq results
 
     ########
+    #DNA-Seq
+    ########
+    dnaseq-process    WGS/WES variant calling from FASTQ files using GATK workflow
+    dnaseq-summary    Summarize variant calling results
+    
+    ########
     #AWS
     ########
     parallel-job      Batch job submission to HPC
